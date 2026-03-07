@@ -554,16 +554,20 @@
     <!-- SIDEBAR -->
     <div class="sidebar">
       <div class="nav-section-label">Navigation</div>
-      <div class="nav-item active" onclick="switchView('analyze')">
+      <div class="nav-item active" onclick="switchView('analyze', this)">
         <span class="nav-icon">⚡</span> Analyze
       </div>
-      <div class="nav-item" onclick="switchView('history')">
+      <div class="nav-item" id="nav-results" onclick="switchView('results', this)" style="display:none">
+        <span class="nav-icon">📊</span> Results
+        <span class="nav-count" id="results-count">0</span>
+      </div>
+      <div class="nav-item" onclick="switchView('history', this)">
         <span class="nav-icon">🗃</span> History
         <span class="nav-count" id="history-count">0</span>
       </div>
       <div class="nav-divider"></div>
       <div class="nav-section-label">Info</div>
-      <div class="nav-item" onclick="switchView('about')">
+      <div class="nav-item" onclick="switchView('about', this)">
         <span class="nav-icon">ℹ</span> How it works
       </div>
       <div style="padding: 20px; margin-top: auto;">
@@ -626,33 +630,45 @@ Example:
           <span id="analyze-status"></span>
         </div>
 
-        <!-- Results -->
-        <div class="results-section" id="results-section">
-          <div class="results-title">Analysis Results</div>
+      </div>
 
-          <div class="metrics-row" id="metrics-row"></div>
-
-          <div class="table-wrap">
-            <div class="table-header-row">
-              <div class="table-header-title">Ticket Breakdown</div>
-              <button class="btn btn-ghost" style="font-size:12px; padding:6px 12px;" onclick="saveToSupabase()">
-                💾 Save to Database
-              </button>
+      <!-- ── RESULTS VIEW ── -->
+      <div class="view" id="view-results">
+        <div class="page-header">
+          <div class="page-header-top">
+            <div>
+              <div class="page-title">Analysis Results</div>
+              <div class="page-sub" id="results-sub">Last batch — auto-saved to Supabase</div>
             </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Ticket ID</th>
-                  <th>Subject</th>
-                  <th>Criticality</th>
-                  <th>Sentiment</th>
-                  <th>Score</th>
-                  <th>Priority</th>
-                </tr>
-              </thead>
-              <tbody id="results-tbody"></tbody>
-            </table>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span id="save-status" style="font-family:var(--mono);font-size:11px;color:var(--text-dim)"></span>
+              <button class="btn btn-ghost" onclick="switchView('analyze', document.querySelector('.nav-item'))">← New Batch</button>
+            </div>
           </div>
+        </div>
+
+        <div class="metrics-row" id="metrics-row"></div>
+
+        <div class="table-wrap">
+          <div class="table-header-row">
+            <div class="table-header-title" id="table-header-title">Ticket Breakdown</div>
+            <div style="display:flex;gap:8px;">
+              <span id="upsert-badge" style="display:none;font-family:var(--mono);font-size:10px;padding:4px 10px;border-radius:20px;background:var(--accent-dim);color:var(--accent);border:1px solid var(--accent-border)">✓ Saved to DB</span>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Ticket ID</th>
+                <th>Subject</th>
+                <th>Criticality</th>
+                <th>Sentiment</th>
+                <th>Score</th>
+                <th>Priority</th>
+              </tr>
+            </thead>
+            <tbody id="results-tbody"></tbody>
+          </table>
         </div>
       </div>
 
@@ -778,11 +794,11 @@ Example:
   }
 
   // ── NAVIGATION ──
-  function switchView(name) {
+  function switchView(name, el) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById('view-' + name).classList.add('active');
-    event.currentTarget.classList.add('active');
+    if (el) el.classList.add('active');
     if (name === 'history') loadHistory();
   }
 
@@ -918,13 +934,27 @@ Example:
     btn.innerHTML = '⚡ Analyze Tickets';
     statusEl.textContent = '';
 
+    // Show Results tab in sidebar
+    const navResults = document.getElementById('nav-results');
+    navResults.style.display = 'flex';
+    document.getElementById('results-count').textContent = analyzedTickets.length;
+
+    // Render results and switch tab
     renderResults(analyzedTickets);
+    switchView('results', navResults);
+
+    // Auto-save to Supabase immediately
+    autoSaveToSupabase(analyzedTickets);
+
     showToast(`✓ ${tickets.length} ticket${tickets.length>1?'s':''} analyzed`, 'success');
   }
 
   function renderResults(tickets) {
-    const section = document.getElementById('results-section');
-    section.style.display = 'block';
+    // Update sub heading
+    document.getElementById('results-sub').textContent =
+      `${tickets.length} ticket${tickets.length>1?'s':''} · Saving to Supabase...`;
+    document.getElementById('table-header-title').textContent =
+      `Ticket Breakdown — ${tickets.length} tickets`;
 
     // Metrics
     const critical = tickets.filter(t => t.criticality === 'Critical').length;
@@ -1030,13 +1060,15 @@ Example:
     }
   }
 
-  // ── SAVE TO SUPABASE ──
-  async function saveToSupabase() {
-    if (!analyzedTickets.length) { showToast('No analyzed tickets to save', 'error'); return; }
+  // ── AUTO-SAVE (upsert on ticket_id) ──
+  async function autoSaveToSupabase(tickets) {
+    const saveStatus = document.getElementById('save-status');
+    const badge = document.getElementById('upsert-badge');
+    saveStatus.innerHTML = '<span class="spinner"></span> Saving...';
+    badge.style.display = 'none';
 
-    showToast('Saving to Supabase...', '');
     try {
-      const payload = analyzedTickets.map(t => ({
+      const payload = tickets.map(t => ({
         ticket_id:     t.ticket_id,
         subject:       t.subject,
         status:        t.status,
@@ -1053,19 +1085,31 @@ Example:
       const res = await sbFetch(TABLE, {
         method: 'POST',
         body: JSON.stringify(payload),
-        headers: { 'Prefer': 'resolution=merge-duplicates' }
+        headers: { 'Prefer': 'resolution=merge-duplicates,return=minimal' }
       });
 
       if (res.ok || res.status === 201) {
-        showToast(`✓ ${analyzedTickets.length} tickets saved to Supabase`, 'success');
+        saveStatus.textContent = '';
+        badge.style.display = 'inline-flex';
+        document.getElementById('results-sub').textContent =
+          `${tickets.length} ticket${tickets.length>1?'s':''} · Auto-saved to Supabase (existing IDs updated)`;
         loadHistoryCount();
+        showToast(`✓ ${tickets.length} tickets upserted to Supabase`, 'success');
       } else {
-        const err = await res.json();
-        throw new Error(err.message || res.status);
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || `HTTP ${res.status}`);
       }
     } catch(e) {
-      showToast('Save failed: ' + e.message, 'error');
+      saveStatus.textContent = '⚠ Save failed: ' + e.message;
+      saveStatus.style.color = 'var(--red)';
+      showToast('DB save failed: ' + e.message, 'error');
     }
+  }
+
+  // ── MANUAL SAVE (kept for backward compat) ──
+  async function saveToSupabase() {
+    if (!analyzedTickets.length) { showToast('No analyzed tickets to save', 'error'); return; }
+    await autoSaveToSupabase(analyzedTickets);
   }
 
   // ── LOAD HISTORY ──
@@ -1118,8 +1162,10 @@ Example:
   // ── UTILS ──
   function clearAll() {
     document.getElementById('json-input').value = '';
-    document.getElementById('results-section').style.display = 'none';
     analyzedTickets = [];
+    // Hide results tab and go back to analyze
+    document.getElementById('nav-results').style.display = 'none';
+    switchView('analyze', document.querySelector('.nav-item'));
   }
 
   function escHtml(str) {
