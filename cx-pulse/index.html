@@ -833,8 +833,63 @@ Example:
   });
 
   // ── ANALYSIS ENGINE ──
+  // ── ZOHO FIELD EXTRACTOR ──
+  function extractFields(t) {
+    // Requester / contact name — nested under contact{}
+    const firstName  = t.contact?.firstName || t.requester?.firstName || '';
+    const lastName   = t.contact?.lastName  || t.requester?.lastName  || '';
+    const fullName   = (firstName + ' ' + lastName).trim()
+                    || t.contact?.name
+                    || t.contactName
+                    || t.requesterName
+                    || 'Unknown';
+
+    // Organisation — nested under contact.account{}
+    const orgName    = t.contact?.account?.accountName
+                    || t.account?.accountName
+                    || t.organizationName
+                    || t.orgName
+                    || '—';
+
+    // Assignee
+    const assignee   = t.assignee?.name
+                    || t.agent?.name
+                    || t.assigneeName
+                    || '—';
+
+    // Department
+    const department = t.department?.name
+                    || t.departmentName
+                    || t.departmentId
+                    || '—';
+
+    // Channel
+    const channel    = t.channel || t.source || '—';
+
+    // Resolved / closed time — Zoho uses closedTime
+    const resolvedAt = t.closedTime
+                    || t.resolvedTime
+                    || t.resolved_at
+                    || null;
+
+    // Ticket ID — Zoho uses ticketNumber as display ID, id as internal
+    const ticketId   = t.ticketNumber
+                    || t.id
+                    || t.ticketId
+                    || ('TK-' + Math.random().toString(36).substr(2,6).toUpperCase());
+
+    // Created time
+    const createdAt  = t.createdTime || t.created_at || t.createdAt || new Date().toISOString();
+
+    // Email
+    const email      = t.contact?.email || t.email || '—';
+
+    return { fullName, orgName, assignee, department, channel, resolvedAt, ticketId, createdAt, email };
+  }
+
   function analyzeTicket(ticket) {
-    const text = ((ticket.subject || '') + ' ' + (ticket.description || '') + ' ' + (ticket.cf || '')).toLowerCase();
+    const fields = extractFields(ticket);
+    const text = ((ticket.subject || '') + ' ' + (ticket.description || '') + ' ' + (ticket.cf ? JSON.stringify(ticket.cf) : '')).toLowerCase();
 
     // Criticality scoring
     const priorityMap = { 'critical': 85, 'urgent': 80, 'high': 60, 'medium': 35, 'low': 15, 'normal': 30 };
@@ -875,22 +930,27 @@ Example:
     const summary = `Ticket scored ${score}/100 criticality. Sentiment detected as ${sentiment.toLowerCase()} based on keyword analysis. ${empathyFlag}${ticket.status ? ' Current status: ' + ticket.status + '.' : ''}`;
 
     return {
-      ticket_id: ticket.id || ticket.ticketNumber || ticket.ticketId || ('TK-' + Math.random().toString(36).substr(2,6).toUpperCase()),
-      subject: ticket.subject || 'No subject',
-      status: ticket.status || 'Unknown',
-      priority: ticket.priority || 'Normal',
-      customer_name: ticket.contactName || ticket.contact?.name || ticket.requester || 'Unknown',
-      created_at: ticket.createdTime || ticket.created_at || new Date().toISOString(),
-      resolved_at: ticket.resolvedTime || ticket.resolved_at || null,
-      raw_data: ticket,
-      ai_score: score,
-      sentiment: sentiment,
-      criticality: criticality,
-      critClass: critClass,
-      sentClass: sentClass,
-      empathy_flag: empathyFlag,
-      summary: summary,
-      analyzed_at: new Date().toISOString()
+      ticket_id:     fields.ticketId,
+      subject:       ticket.subject || 'No subject',
+      status:        ticket.status || 'Unknown',
+      priority:      ticket.priority || 'Normal',
+      customer_name: fields.fullName,
+      org_name:      fields.orgName,
+      assignee:      fields.assignee,
+      department:    fields.department,
+      channel:       fields.channel,
+      email:         fields.email,
+      created_at:    fields.createdAt,
+      resolved_at:   fields.resolvedAt,
+      raw_data:      ticket,
+      ai_score:      score,
+      sentiment:     sentiment,
+      criticality:   criticality,
+      critClass:     critClass,
+      sentClass:     sentClass,
+      empathy_flag:  empathyFlag,
+      summary:       summary,
+      analyzed_at:   new Date().toISOString()
     };
   }
 
@@ -1038,15 +1098,44 @@ Example:
         <div class="modal-analysis-text">${t.summary}</div>
       </div>
       <div class="modal-section">
+        <div class="modal-section-label">Requester & Organisation</div>
+        <div class="modal-grid-2">
+          <div class="modal-field">
+            <div class="modal-field-label">Requester Name</div>
+            <div class="modal-field-value">${t.customer_name}</div>
+          </div>
+          <div class="modal-field">
+            <div class="modal-field-label">Organisation</div>
+            <div class="modal-field-value">${t.org_name}</div>
+          </div>
+          <div class="modal-field">
+            <div class="modal-field-label">Email</div>
+            <div class="modal-field-value" style="font-size:13px">${t.email}</div>
+          </div>
+          <div class="modal-field">
+            <div class="modal-field-label">Assignee</div>
+            <div class="modal-field-value">${t.assignee}</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-section">
         <div class="modal-section-label">Ticket Info</div>
         <div class="modal-grid-2">
           <div class="modal-field">
-            <div class="modal-field-label">Customer</div>
-            <div class="modal-field-value">${t.customer_name}</div>
+            <div class="modal-field-label">Department</div>
+            <div class="modal-field-value">${t.department}</div>
+          </div>
+          <div class="modal-field">
+            <div class="modal-field-label">Channel</div>
+            <div class="modal-field-value">${t.channel}</div>
           </div>
           <div class="modal-field">
             <div class="modal-field-label">Created</div>
             <div class="modal-field-value">${t.created_at ? new Date(t.created_at).toLocaleDateString('en-IN') : '—'}</div>
+          </div>
+          <div class="modal-field">
+            <div class="modal-field-label">Resolved / Closed</div>
+            <div class="modal-field-value">${t.resolved_at ? new Date(t.resolved_at).toLocaleDateString('en-IN') : 'Open'}</div>
           </div>
         </div>
       </div>
@@ -1074,6 +1163,11 @@ Example:
         status:        t.status,
         priority:      t.priority,
         customer_name: t.customer_name,
+        org_name:      t.org_name,
+        assignee:      t.assignee,
+        department:    t.department,
+        channel:       t.channel,
+        email:         t.email,
         created_at:    t.created_at,
         resolved_at:   t.resolved_at,
         raw_data:      t.raw_data,
