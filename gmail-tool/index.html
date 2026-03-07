@@ -6,293 +6,308 @@
 <title>Gmail Tool — Meritto</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0a0a0a;
-    --surface: #111111;
-    --surface2: #1a1a1a;
-    --border: #222222;
-    --border2: #2a2a2a;
-    --text: #e8e8e8;
-    --text2: #888888;
-    --text3: #555555;
-    --accent: #00d4aa;
-    --accent2: #0099ff;
-    --warn: #ff6b35;
-    --danger: #ff3b3b;
-    --urgent: #ff3b3b;
-    --high: #ff6b35;
-    --normal: #00d4aa;
-    --fyi: #555555;
-    --mono: 'Space Mono', monospace;
-    --sans: 'DM Sans', sans-serif;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: var(--sans); background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+:root {
+  --bg:#0a0a0a; --surface:#111111; --surface2:#1a1a1a; --surface3:#202020;
+  --border:#222222; --border2:#2a2a2a;
+  --text:#e8e8e8; --text2:#888888; --text3:#555555;
+  --accent:#00d4aa; --accent2:#0099ff;
+  --warn:#ff6b35; --danger:#ff3b3b;
+  --contra:#ff3b3b; --compl:#00d4aa; --standalone:#555;
+  --mono:'Space Mono',monospace; --sans:'DM Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
 
-  /* TOP BAR */
-  .topbar { height: 52px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 16px; flex-shrink: 0; }
-  .topbar-brand { font-family: var(--mono); font-size: 13px; color: var(--accent); letter-spacing: 0.05em; }
-  .topbar-divider { width: 1px; height: 20px; background: var(--border2); }
-  .topbar-nav { display: flex; gap: 4px; }
-  .topbar-nav button { background: none; border: none; cursor: pointer; font-family: var(--sans); font-size: 13px; font-weight: 500; color: var(--text2); padding: 6px 12px; border-radius: 6px; transition: all 0.15s; }
-  .topbar-nav button:hover { background: var(--surface2); color: var(--text); }
-  .topbar-nav button.active { background: var(--surface2); color: var(--accent); }
-  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-  .user-chip { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 20px; padding: 4px 12px 4px 4px; }
-  .user-avatar { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #000; }
-  .user-name { font-size: 12px; color: var(--text2); }
-  .btn { font-family: var(--sans); font-size: 12px; font-weight: 600; padding: 7px 14px; border-radius: 6px; cursor: pointer; border: none; transition: all 0.15s; letter-spacing: 0.02em; }
-  .btn-primary { background: var(--accent); color: #000; }
-  .btn-primary:hover { background: #00efc0; }
-  .btn-ghost { background: none; border: 1px solid var(--border2); color: var(--text2); }
-  .btn-ghost:hover { border-color: var(--text3); color: var(--text); }
-  .btn-sm { padding: 4px 10px; font-size: 11px; }
+/* TOPBAR */
+.topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:14px;flex-shrink:0;}
+.brand{font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:.05em;}
+.tdiv{width:1px;height:20px;background:var(--border2);}
+.tnav{display:flex;gap:4px;}
+.tnav button{background:none;border:none;cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:500;color:var(--text2);padding:6px 12px;border-radius:6px;transition:all .15s;}
+.tnav button:hover{background:var(--surface2);color:var(--text);}
+.tnav button.active{background:var(--surface2);color:var(--accent);}
+.tright{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.uchip{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:4px 12px 4px 4px;}
+.uavatar{width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;}
+.uname{font-size:12px;color:var(--text2);}
+.btn{font-family:var(--sans);font-size:12px;font-weight:600;padding:7px 14px;border-radius:6px;cursor:pointer;border:none;transition:all .15s;}
+.btn-primary{background:var(--accent);color:#000;}.btn-primary:hover{background:#00efc0;}
+.btn-ghost{background:none;border:1px solid var(--border2);color:var(--text2);}.btn-ghost:hover{border-color:var(--text3);color:var(--text);}
+.btn-sync{background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);color:var(--accent);}
+.btn-sync:hover{background:rgba(0,212,170,.2);}
+.btn-sm{padding:4px 10px;font-size:11px;}
 
-  /* MAIN */
-  .main { display: flex; flex: 1; overflow: hidden; }
+/* SYNC STATUS */
+.sync-bar{height:28px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;font-family:var(--mono);font-size:10px;color:var(--text3);flex-shrink:0;}
+.sync-stat{display:flex;align-items:center;gap:6px;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);}
+.sync-dot.green{background:var(--accent);}
+.sync-dot.pulse{animation:sdot 1.5s infinite;}
+@keyframes sdot{0%,100%{opacity:.3;}50%{opacity:1;}}
 
-  /* SIDEBAR */
-  .sidebar { width: 220px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 16px 0; }
-  .sidebar-section { padding: 0 12px; margin-bottom: 4px; }
-  .sidebar-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; color: var(--text3); text-transform: uppercase; padding: 8px 8px 6px; }
-  .sidebar-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--text2); transition: all 0.12s; margin-bottom: 1px; }
-  .sidebar-item:hover { background: var(--surface2); color: var(--text); }
-  .sidebar-item.active { background: var(--surface2); color: var(--accent); }
-  .sidebar-item-left { display: flex; align-items: center; gap: 8px; }
-  .badge { background: var(--accent); color: #000; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 10px; font-family: var(--mono); }
-  .badge-warn { background: var(--warn); color: #000; }
-  .badge-muted { background: var(--surface2); color: var(--text3); }
+/* PROGRESS */
+.prog-bar{height:2px;background:var(--surface2);flex-shrink:0;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:width .3s;}
 
-  /* CONTENT */
-  .content { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-  .screen { display: none; flex: 1; flex-direction: column; overflow: hidden; }
-  .screen.active { display: flex; }
+/* MAIN */
+.main{display:flex;flex:1;overflow:hidden;}
 
-  /* LOGIN */
-  #screen-login { align-items: center; justify-content: center; background: var(--bg); }
-  .login-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 16px; padding: 48px; max-width: 380px; width: 100%; text-align: center; }
-  .login-logo { font-family: var(--mono); font-size: 28px; color: var(--accent); margin-bottom: 8px; }
-  .login-sub { font-size: 13px; color: var(--text2); margin-bottom: 32px; line-height: 1.6; }
-  .google-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-size: 14px; font-weight: 500; cursor: pointer; font-family: var(--sans); transition: all 0.15s; }
-  .google-btn:hover { border-color: var(--accent); color: var(--accent); }
-  .login-features { margin-top: 28px; text-align: left; display: flex; flex-direction: column; gap: 10px; }
-  .login-feature { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text2); }
-  .login-feature-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+/* SIDEBAR */
+.sidebar{width:210px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:14px 0;}
+.slabel{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--text3);text-transform:uppercase;padding:8px 20px 5px;}
+.sitem{display:flex;align-items:center;justify-content:space-between;padding:7px 12px 7px 18px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);transition:all .12s;margin:0 8px 1px;border-radius:6px;}
+.sitem:hover{background:var(--surface2);color:var(--text);}
+.sitem.active{background:var(--surface2);color:var(--accent);}
+.sitem-l{display:flex;align-items:center;gap:8px;}
+.badge{background:var(--accent);color:#000;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;font-family:var(--mono);}
+.badge-r{background:var(--danger);color:#fff;}
+.badge-w{background:var(--warn);color:#000;}
+.badge-m{background:var(--surface2);color:var(--text3);}
 
-  /* INBOX TOOLBAR */
-  .inbox-toolbar { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-shrink: 0; flex-wrap: wrap; }
-  .inbox-title { font-family: var(--mono); font-size: 13px; color: var(--text2); white-space: nowrap; }
-  .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-  .chip { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid var(--border2); color: var(--text3); transition: all 0.12s; font-family: var(--mono); }
-  .chip:hover { border-color: var(--text3); color: var(--text2); }
-  .chip.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,170,0.08); }
-  .chip.urgent-chip { border-color: var(--urgent); color: var(--urgent); }
-  .chip.urgent-chip.active { background: rgba(255,59,59,0.08); }
-  .toolbar-right { margin-left: auto; display: flex; gap: 8px; }
+/* CONTENT */
+.content{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+.screen{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.screen.active{display:flex;}
 
-  /* EMAIL LIST */
-  .email-list { flex: 1; overflow-y: auto; }
-  .email-list::-webkit-scrollbar { width: 4px; }
-  .email-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-  .email-item { padding: 14px 20px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.12s; display: flex; gap: 14px; align-items: flex-start; }
-  .email-item:hover { background: var(--surface2); }
-  .email-item.unread { border-left: 3px solid var(--accent); }
-  .email-item.selected { background: rgba(0,212,170,0.05); }
-  .email-priority-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
-  .priority-urgent { background: var(--urgent); box-shadow: 0 0 6px var(--urgent); }
-  .priority-high { background: var(--high); }
-  .priority-normal { background: var(--normal); }
-  .priority-fyi { background: var(--fyi); }
-  .email-main { flex: 1; min-width: 0; }
-  .email-row1 { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-  .email-sender { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
-  .email-sender.read { font-weight: 400; color: var(--text2); }
-  .email-cat { font-family: var(--mono); font-size: 9px; letter-spacing: 0.06em; padding: 1px 6px; border-radius: 3px; background: var(--surface2); color: var(--text3); text-transform: uppercase; white-space: nowrap; }
-  .cat-action { background: rgba(0,153,255,0.12); color: var(--accent2); }
-  .cat-meeting { background: rgba(0,212,170,0.1); color: var(--accent); }
-  .cat-info { background: var(--surface2); color: var(--text3); }
-  .cat-newsletter { background: var(--surface2); color: var(--text3); }
-  .email-time { margin-left: auto; font-size: 11px; color: var(--text3); font-family: var(--mono); white-space: nowrap; }
-  .email-subject { font-size: 13px; color: var(--text); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .email-subject.read { color: var(--text2); }
-  .email-summary { font-size: 12px; color: var(--text2); line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-  .email-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.12s; }
-  .email-item:hover .email-actions { opacity: 1; }
-  .icon-btn { width: 28px; height: 28px; border-radius: 6px; border: none; background: var(--surface2); color: var(--text2); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: all 0.12s; }
-  .icon-btn:hover { background: var(--border2); color: var(--text); }
-  .loading-row { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); }
-  .skeleton { background: var(--surface2); border-radius: 4px; animation: pulse 1.5s infinite; }
-  @keyframes pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+/* LOGIN */
+#screen-login{align-items:center;justify-content:center;background:var(--bg);}
+.login-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:48px;max-width:380px;width:100%;text-align:center;}
+.login-logo{font-family:var(--mono);font-size:28px;color:var(--accent);margin-bottom:8px;}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:32px;line-height:1.6;}
+.google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all .15s;}
+.google-btn:hover{border-color:var(--accent);color:var(--accent);}
+.login-feat{margin-top:28px;text-align:left;display:flex;flex-direction:column;gap:8px;}
+.lf{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2);}
+.lfd{width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0;}
 
-  /* THREAD PANEL */
-  .thread-panel { width: 460px; flex-shrink: 0; border-left: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); }
-  .thread-header { padding: 16px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-  .thread-subject { font-size: 15px; font-weight: 600; margin-bottom: 8px; line-height: 1.4; }
-  .thread-meta { display: flex; gap: 8px; flex-wrap: wrap; }
-  .thread-tag { font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border2); color: var(--text3); }
-  .thread-actions-bar { padding: 10px 20px; border-bottom: 1px solid var(--border); display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
-  .thread-body { flex: 1; overflow-y: auto; }
-  .thread-body::-webkit-scrollbar { width: 4px; }
-  .thread-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-  .thread-message { padding: 16px 20px; border-bottom: 1px solid var(--border); }
-  .msg-from { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
-  .msg-time { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-bottom: 10px; }
-  .msg-body { font-size: 13px; color: var(--text2); line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
+/* INBOX TOOLBAR */
+.itoolbar{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;}
+.ititle{font-family:var(--mono);font-size:12px;color:var(--text2);white-space:nowrap;}
+.chips{display:flex;gap:5px;flex-wrap:wrap;}
+.chip{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--border2);color:var(--text3);transition:all .12s;font-family:var(--mono);}
+.chip:hover{border-color:var(--text3);color:var(--text2);}
+.chip.active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,170,.08);}
+.chip.ch-urgent{border-color:var(--danger);color:var(--danger);}
+.chip.ch-urgent.active{background:rgba(255,59,59,.08);}
+.chip.ch-contra{border-color:var(--contra);color:var(--contra);}
+.chip.ch-contra.active{background:rgba(255,59,59,.08);}
+.tbar-r{margin-left:auto;display:flex;gap:6px;}
 
-  /* REPLY BOX */
-  .reply-box { border-top: 1px solid var(--border); flex-shrink: 0; }
-  .reply-tabs { display: flex; border-bottom: 1px solid var(--border); }
-  .reply-tab { flex: 1; padding: 10px; text-align: center; font-size: 12px; font-weight: 500; color: var(--text3); cursor: pointer; transition: all 0.12s; border: none; background: none; }
-  .reply-tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
-  .reply-content { padding: 12px 16px; }
-  .reply-textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 12px; color: var(--text); font-family: var(--sans); font-size: 13px; resize: none; outline: none; line-height: 1.6; transition: border-color 0.15s; }
-  .reply-textarea:focus { border-color: var(--accent); }
-  .reply-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
-  .reply-tone { display: flex; gap: 4px; }
-  .tone-chip { padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; border: 1px solid var(--border2); color: var(--text3); transition: all 0.12s; background: none; }
-  .tone-chip.active { border-color: var(--accent2); color: var(--accent2); }
+/* EMAIL LIST */
+.elist{flex:1;overflow-y:auto;}
+.elist::-webkit-scrollbar{width:3px;}
+.elist::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
 
-  /* TASKS */
-  .screen-content { padding: 20px; overflow-y: auto; flex: 1; }
-  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-  .section-title { font-family: var(--mono); font-size: 12px; color: var(--text2); letter-spacing: 0.05em; text-transform: uppercase; }
-  .task-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 12px; }
-  .task-check { width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--border2); flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-top: 2px; transition: all 0.12s; font-size: 11px; }
-  .task-check:hover { border-color: var(--accent); }
-  .task-check.done { background: var(--accent); border-color: var(--accent); color: #000; }
-  .task-main { flex: 1; }
-  .task-title { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
-  .task-title.done { text-decoration: line-through; color: var(--text3); }
-  .task-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .task-from { font-size: 11px; color: var(--text3); }
-  .task-due { font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 3px; background: rgba(255,107,53,0.1); color: var(--high); }
-  .task-due.overdue { background: rgba(255,59,59,0.1); color: var(--urgent); }
-  .task-due.ok { background: rgba(0,212,170,0.1); color: var(--accent); }
+.eitem{padding:12px 16px 12px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;display:flex;gap:12px;align-items:flex-start;}
+.eitem:hover{background:var(--surface2);}
+.eitem.unread{border-left:2px solid var(--accent);}
+.eitem.selected{background:rgba(0,212,170,.05);}
+.eprio{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.p-urgent{background:var(--danger);box-shadow:0 0 5px var(--danger);}
+.p-high{background:var(--warn);}
+.p-normal{background:var(--accent);}
+.p-fyi{background:var(--text3);}
+.emain{flex:1;min-width:0;}
+.erow1{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.esender{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+.esender.read{font-weight:400;color:var(--text2);}
+.ecat{font-family:var(--mono);font-size:9px;padding:1px 5px;border-radius:3px;background:var(--surface2);color:var(--text3);text-transform:uppercase;white-space:nowrap;}
+.cat-action{background:rgba(0,153,255,.12);color:var(--accent2);}
+.cat-meeting{background:rgba(0,212,170,.1);color:var(--accent);}
+.etime{margin-left:auto;font-size:10px;color:var(--text3);font-family:var(--mono);white-space:nowrap;}
+.esubj{font-size:12px;color:var(--text);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.esubj.read{color:var(--text2);}
+.esum{font-size:11px;color:var(--text2);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;}
+.esignals{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;}
 
-  /* RULES */
-  .rule-item { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
-  .rule-toggle { width: 32px; height: 18px; border-radius: 9px; background: var(--border2); cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; }
-  .rule-toggle.on { background: var(--accent); }
-  .rule-toggle::after { content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: white; top: 2px; left: 2px; transition: left 0.2s; }
-  .rule-toggle.on::after { left: 16px; }
-  .rule-main { flex: 1; }
-  .rule-name { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
-  .rule-desc { font-size: 12px; color: var(--text2); }
-  .rule-action { font-family: var(--mono); font-size: 10px; color: var(--accent2); margin-top: 2px; }
+/* CONTEXT SIGNALS */
+.sig{font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:3px;letter-spacing:.03em;white-space:nowrap;}
+.sig-contra{background:rgba(255,59,59,.15);color:var(--contra);border:1px solid rgba(255,59,59,.3);}
+.sig-compl{background:rgba(0,212,170,.1);color:var(--compl);border:1px solid rgba(0,212,170,.25);}
+.sig-thread{background:rgba(0,153,255,.1);color:var(--accent2);border:1px solid rgba(0,153,255,.25);}
 
-  /* DIGEST */
-  .digest-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 12px; }
-  .digest-date { font-family: var(--mono); font-size: 11px; color: var(--accent); margin-bottom: 12px; }
-  .digest-stat-row { display: flex; gap: 16px; margin-bottom: 16px; }
-  .digest-stat { flex: 1; background: var(--surface2); border-radius: 8px; padding: 12px; text-align: center; }
-  .digest-stat-num { font-family: var(--mono); font-size: 24px; font-weight: 700; color: var(--accent); }
-  .digest-stat-label { font-size: 11px; color: var(--text3); margin-top: 2px; }
-  .digest-action-item { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--border); }
-  .digest-action-item:last-child { border-bottom: none; }
-  .dai-num { font-family: var(--mono); font-size: 11px; color: var(--text3); min-width: 18px; }
-  .dai-text { font-size: 13px; color: var(--text); line-height: 1.5; }
-  .dai-from { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.eactions{display:flex;gap:3px;opacity:0;transition:opacity .12s;flex-shrink:0;}
+.eitem:hover .eactions{opacity:1;}
+.ibtn{width:26px;height:26px;border-radius:5px;border:none;background:var(--surface2);color:var(--text2);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .12s;}
+.ibtn:hover{background:var(--border2);color:var(--text);}
 
-  /* FORM */
-  .form-group { margin-bottom: 14px; }
-  .form-label { font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 6px; display: block; letter-spacing: 0.03em; }
-  .form-input, .form-select { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: 6px; padding: 8px 12px; color: var(--text); font-family: var(--sans); font-size: 13px; outline: none; transition: border-color 0.15s; }
-  .form-input:focus, .form-select:focus { border-color: var(--accent); }
-  .form-select { cursor: pointer; }
-  option { background: var(--surface2); }
+/* SKELETON */
+.skel-row{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border);}
+.skel{background:var(--surface2);border-radius:4px;animation:sk 1.5s infinite;}
+@keyframes sk{0%,100%{opacity:.3;}50%{opacity:.7;}}
 
-  /* MODAL */
-  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; display: none; align-items: center; justify-content: center; }
-  .modal-overlay.open { display: flex; }
-  .modal { background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; padding: 24px; max-width: 460px; width: 90%; max-height: 80vh; overflow-y: auto; }
-  .modal-title { font-family: var(--mono); font-size: 14px; color: var(--accent); margin-bottom: 20px; }
-  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+/* THREAD PANEL */
+.tpanel{width:460px;flex-shrink:0;border-left:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface);}
+.thead{padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.tsubj{font-size:14px;font-weight:600;margin-bottom:8px;line-height:1.4;}
+.tmeta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.ttag{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--border2);color:var(--text3);}
 
-  /* STATUS BAR */
-  .statusbar { height: 24px; background: var(--surface); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; gap: 16px; flex-shrink: 0; }
-  .status-item { font-family: var(--mono); font-size: 10px; color: var(--text3); }
-  .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-  .status-dot.green { background: var(--accent); }
+/* CONTEXT PANEL in thread */
+.ctx-panel{background:var(--surface2);border-bottom:1px solid var(--border);padding:12px 18px;flex-shrink:0;}
+.ctx-title{font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;margin-bottom:8px;}
+.ctx-item{display:flex;gap:8px;padding:6px 8px;border-radius:6px;margin-bottom:4px;cursor:pointer;}
+.ctx-item:hover{background:var(--surface3);}
+.ctx-item.contra{border-left:2px solid var(--contra);background:rgba(255,59,59,.05);}
+.ctx-item.compl{border-left:2px solid var(--compl);background:rgba(0,212,170,.04);}
+.ctx-item.thread{border-left:2px solid var(--accent2);background:rgba(0,153,255,.04);}
+.ctx-icon{font-size:13px;flex-shrink:0;margin-top:1px;}
+.ctx-body{flex:1;min-width:0;}
+.ctx-rel{font-size:11px;font-weight:600;margin-bottom:2px;}
+.ctx-reason{font-size:11px;color:var(--text2);line-height:1.4;}
+.ctx-from{font-size:10px;color:var(--text3);margin-top:2px;font-family:var(--mono);}
 
-  /* PROGRESS BAR */
-  .progress-bar { height: 2px; background: var(--surface2); flex-shrink: 0; overflow: hidden; }
-  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); width: 0%; transition: width 0.3s; }
+.tabbar{padding:8px 18px;border-bottom:1px solid var(--border);display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;}
+.tbody{flex:1;overflow-y:auto;}
+.tbody::-webkit-scrollbar{width:3px;}
+.tbody::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.tmsg{padding:14px 18px;border-bottom:1px solid var(--border);}
+.mfrom{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.mtime{font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:8px;}
+.mbody{font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap;word-break:break-word;}
 
-  /* EMPTY STATE */
-  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 12px; padding: 40px; }
-  .empty-icon { font-size: 32px; opacity: 0.3; }
-  .empty-text { font-size: 14px; color: var(--text3); text-align: center; }
+/* REPLY */
+.rbox{border-top:1px solid var(--border);flex-shrink:0;}
+.rtabs{display:flex;border-bottom:1px solid var(--border);}
+.rtab{flex:1;padding:9px;text-align:center;font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;transition:all .12s;border:none;background:none;}
+.rtab.active{color:var(--accent);border-bottom:2px solid var(--accent);}
+.rcontent{padding:10px 14px;}
+.rta{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px 11px;color:var(--text);font-family:var(--sans);font-size:12px;resize:none;outline:none;line-height:1.6;transition:border-color .15s;}
+.rta:focus{border-color:var(--accent);}
+.rfooter{display:flex;justify-content:space-between;align-items:center;margin-top:7px;}
+.tones{display:flex;gap:4px;}
+.tone{padding:3px 7px;border-radius:4px;font-size:10px;cursor:pointer;border:1px solid var(--border2);color:var(--text3);transition:all .12s;background:none;}
+.tone.active{border-color:var(--accent2);color:var(--accent2);}
 
-  /* TOAST */
-  .toast-container { position: fixed; bottom: 40px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
-  .toast { background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 16px; font-size: 13px; display: flex; align-items: center; gap: 8px; animation: slide-in 0.2s ease; min-width: 220px; }
-  .toast.success { border-color: var(--accent); }
-  .toast.error { border-color: var(--danger); }
-  @keyframes slide-in { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+/* SCREEN CONTENT */
+.scontent{padding:18px;overflow-y:auto;flex:1;}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.stitle{font-family:var(--mono);font-size:11px;color:var(--text2);letter-spacing:.05em;text-transform:uppercase;}
 
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-  .spin { animation: spin 1s linear infinite; display: inline-block; }
-  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-  .hidden { display: none !important; }
+/* TASKS */
+.task-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:7px;display:flex;align-items:flex-start;gap:10px;}
+.tcheck{width:17px;height:17px;border-radius:4px;border:1px solid var(--border2);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:2px;transition:all .12s;font-size:10px;}
+.tcheck:hover{border-color:var(--accent);}
+.tcheck.done{background:var(--accent);border-color:var(--accent);color:#000;}
+.tmain2{flex:1;}
+.ttitle{font-size:13px;font-weight:500;margin-bottom:3px;}
+.ttitle.done{text-decoration:line-through;color:var(--text3);}
+.tmeta2{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+.tfrom{font-size:11px;color:var(--text3);}
+.tdue{font-family:var(--mono);font-size:10px;padding:1px 5px;border-radius:3px;background:rgba(255,107,53,.1);color:var(--warn);}
+.tdue.ov{background:rgba(255,59,59,.1);color:var(--danger);}
+.tdue.ok{background:rgba(0,212,170,.1);color:var(--accent);}
+
+/* RULES */
+.rule-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:7px;display:flex;align-items:center;gap:10px;}
+.rtoggle{width:30px;height:17px;border-radius:9px;background:var(--border2);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
+.rtoggle.on{background:var(--accent);}
+.rtoggle::after{content:'';position:absolute;width:13px;height:13px;border-radius:50%;background:white;top:2px;left:2px;transition:left .2s;}
+.rtoggle.on::after{left:15px;}
+.rmain{flex:1;}
+.rname{font-size:13px;font-weight:500;margin-bottom:2px;}
+.rdesc{font-size:12px;color:var(--text2);}
+.raction{font-family:var(--mono);font-size:10px;color:var(--accent2);margin-top:2px;}
+
+/* DIGEST */
+.dcard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:10px;}
+.ddate{font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:10px;}
+.dstats{display:flex;gap:12px;margin-bottom:14px;}
+.dstat{flex:1;background:var(--surface2);border-radius:7px;padding:10px;text-align:center;}
+.dnum{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--accent);}
+.dlbl{font-size:10px;color:var(--text3);margin-top:2px;}
+.dai{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border);}
+.dai:last-child{border-bottom:none;}
+.dain{font-family:var(--mono);font-size:10px;color:var(--text3);min-width:16px;}
+.dait{font-size:12px;color:var(--text);line-height:1.5;}
+.daif{font-size:10px;color:var(--text3);margin-top:2px;}
+
+/* FORM */
+.fg{margin-bottom:12px;}
+.fl{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;display:block;letter-spacing:.03em;}
+.fi,.fs{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .15s;}
+.fi:focus,.fs:focus{border-color:var(--accent);}
+.fs{cursor:pointer;}
+option{background:var(--surface2);}
+
+/* MODAL */
+.movl{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;align-items:center;justify-content:center;}
+.movl.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:22px;max-width:440px;width:90%;max-height:80vh;overflow-y:auto;}
+.mtitle{font-family:var(--mono);font-size:13px;color:var(--accent);margin-bottom:18px;}
+.mfoot{display:flex;gap:7px;justify-content:flex-end;margin-top:18px;}
+
+/* STATUS BAR */
+.statusbar{height:22px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:14px;flex-shrink:0;}
+.sbi{font-family:var(--mono);font-size:10px;color:var(--text3);}
+
+/* TOASTS */
+.tc{position:fixed;bottom:36px;right:18px;z-index:200;display:flex;flex-direction:column;gap:6px;}
+.toast{background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:9px 14px;font-size:12px;display:flex;align-items:center;gap:7px;animation:ti .2s ease;min-width:200px;}
+.toast.success{border-color:var(--accent);}
+.toast.error{border-color:var(--danger);}
+@keyframes ti{from{transform:translateX(16px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+
+/* EMPTY */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:10px;padding:40px;}
+.ei{font-size:28px;opacity:.25;}
+.et{font-size:13px;color:var(--text3);text-align:center;}
+
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.spin{animation:sp 1s linear infinite;display:inline-block;}
+@keyframes sp{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+.hidden{display:none!important;}
 </style>
 </head>
 <body>
 
+<!-- TOPBAR -->
 <div class="topbar">
-  <div class="topbar-brand">G_TOOL</div>
-  <div class="topbar-divider"></div>
-  <div class="topbar-nav">
+  <div class="brand">G_TOOL</div>
+  <div class="tdiv"></div>
+  <div class="tnav">
     <button class="active" onclick="switchScreen('inbox')">Inbox</button>
     <button onclick="switchScreen('tasks')">Tasks</button>
     <button onclick="switchScreen('digest')">Digest</button>
-    <button onclick="switchScreen('rules')">Auto Rules</button>
+    <button onclick="switchScreen('rules')">Rules</button>
   </div>
-  <div class="topbar-right">
-    <div id="user-chip" class="user-chip hidden">
-      <div class="user-avatar" id="user-avatar">R</div>
-      <span class="user-name" id="user-name-display"></span>
+  <div class="tright">
+    <div id="uchip" class="uchip hidden">
+      <div class="uavatar" id="uav">R</div>
+      <span class="uname" id="uname"></span>
     </div>
-    <button class="btn btn-ghost btn-sm" id="btn-refresh" style="display:none" onclick="fetchEmails()">↻ Refresh</button>
-    <button class="btn btn-ghost btn-sm" id="btn-signout" style="display:none" onclick="signOut()">Sign out</button>
+    <button class="btn btn-sync btn-sm hidden" id="btn-sync" onclick="syncEmails()">⟳ Sync</button>
+    <button class="btn btn-ghost btn-sm hidden" id="btn-so" onclick="signOut()">Sign out</button>
   </div>
 </div>
 
-<div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+<!-- SYNC STATUS BAR -->
+<div class="sync-bar hidden" id="sync-bar">
+  <div class="sync-stat"><div class="sync-dot" id="sdot"></div><span id="smsg">Ready</span></div>
+  <div class="sync-stat" id="scounts" style="margin-left:auto"></div>
+  <div class="sync-stat" id="slast"></div>
+</div>
 
+<!-- PROGRESS BAR -->
+<div class="prog-bar"><div class="prog-fill" id="pfill"></div></div>
+
+<!-- MAIN -->
 <div class="main">
+
   <!-- SIDEBAR -->
   <div class="sidebar hidden" id="sidebar">
-    <div class="sidebar-section">
-      <div class="sidebar-label">Inbox</div>
-      <div class="sidebar-item active" onclick="setFilter('all')">
-        <div class="sidebar-item-left"><span>📬</span> All</div>
-        <span class="badge" id="badge-all">0</span>
-      </div>
-      <div class="sidebar-item" onclick="setFilter('urgent')">
-        <div class="sidebar-item-left"><span>🔴</span> Urgent</div>
-        <span class="badge badge-warn hidden" id="badge-urgent">0</span>
-      </div>
-      <div class="sidebar-item" onclick="setFilter('action')">
-        <div class="sidebar-item-left"><span>⚡</span> Action</div>
-        <span class="badge hidden" id="badge-action">0</span>
-      </div>
-      <div class="sidebar-item" onclick="setFilter('unread')">
-        <div class="sidebar-item-left"><span>◎</span> Unread</div>
-        <span class="badge hidden" id="badge-unread">0</span>
-      </div>
-    </div>
-    <div class="sidebar-section">
-      <div class="sidebar-label">Saved</div>
-      <div class="sidebar-item" onclick="setFilter('tasks')">
-        <div class="sidebar-item-left"><span>✓</span> Tasks</div>
-        <span class="badge badge-muted" id="badge-tasks">0</span>
-      </div>
-      <div class="sidebar-item" onclick="setFilter('saved')">
-        <div class="sidebar-item-left"><span>★</span> Saved</div>
-        <span class="badge badge-muted" id="badge-saved">0</span>
-      </div>
-    </div>
+    <div class="slabel">Inbox</div>
+    <div class="sitem active" onclick="setFilter('all',this)"><div class="sitem-l">📬 All</div><span class="badge" id="b-all">0</span></div>
+    <div class="sitem" onclick="setFilter('urgent',this)"><div class="sitem-l">🔴 Urgent</div><span class="badge badge-r hidden" id="b-urg">0</span></div>
+    <div class="sitem" onclick="setFilter('action',this)"><div class="sitem-l">⚡ Action</div><span class="badge hidden" id="b-act">0</span></div>
+    <div class="sitem" onclick="setFilter('unread',this)"><div class="sitem-l">◎ Unread</div><span class="badge hidden" id="b-unr">0</span></div>
+    <div class="slabel" style="margin-top:8px">Context</div>
+    <div class="sitem" onclick="setFilter('contra',this)"><div class="sitem-l">⚠ Contradictions</div><span class="badge badge-r hidden" id="b-con">0</span></div>
+    <div class="sitem" onclick="setFilter('compl',this)"><div class="sitem-l">✦ Complements</div><span class="badge hidden" id="b-cmp">0</span></div>
+    <div class="slabel" style="margin-top:8px">Saved</div>
+    <div class="sitem" onclick="setFilter('tasks',this)"><div class="sitem-l">✓ Tasks</div><span class="badge badge-m" id="b-tsk">0</span></div>
+    <div class="sitem" onclick="setFilter('saved',this)"><div class="sitem-l">★ Saved</div><span class="badge badge-m" id="b-sav">0</span></div>
   </div>
 
   <!-- CONTENT -->
@@ -302,17 +317,17 @@
     <div class="screen active" id="screen-login">
       <div class="login-card">
         <div class="login-logo">G_TOOL</div>
-        <div class="login-sub">AI-powered Gmail triage, tasks &amp; automation for Meritto</div>
+        <div class="login-sub">Full Gmail sync with AI context engine — contradictions, complements &amp; smart triage</div>
         <button class="google-btn" onclick="signIn()">
-          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.7 2.5 30.2 0 24 0 14.7 0 6.8 5.4 2.8 13.3l7.8 6.1C12.5 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17z"/><path fill="#FBBC05" d="M10.6 28.6A14.5 14.5 0 019.5 24c0-1.6.3-3.1.7-4.6L2.4 13.3A23.9 23.9 0 000 24c0 3.9.9 7.5 2.8 10.7l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.2 0 11.5-2 15.4-5.5l-7.5-5.8c-2.1 1.4-4.8 2.3-7.9 2.3-6.2 0-11.5-3.5-13.4-8.4l-7.8 6.1C6.8 42.6 14.7 48 24 48z"/></svg>
+          <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.7 2.5 30.2 0 24 0 14.7 0 6.8 5.4 2.8 13.3l7.8 6.1C12.5 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17z"/><path fill="#FBBC05" d="M10.6 28.6A14.5 14.5 0 019.5 24c0-1.6.3-3.1.7-4.6L2.4 13.3A23.9 23.9 0 000 24c0 3.9.9 7.5 2.8 10.7l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.2 0 11.5-2 15.4-5.5l-7.5-5.8c-2.1 1.4-4.8 2.3-7.9 2.3-6.2 0-11.5-3.5-13.4-8.4l-7.8 6.1C6.8 42.6 14.7 48 24 48z"/></svg>
           Continue with Google
         </button>
-        <div class="login-features">
-          <div class="login-feature"><div class="login-feature-dot"></div>AI triage — priority + category per email</div>
-          <div class="login-feature"><div class="login-feature-dot"></div>Auto-read rules — newsletters, alerts, domains</div>
-          <div class="login-feature"><div class="login-feature-dot"></div>Tasks &amp; reminders flagged from emails</div>
-          <div class="login-feature"><div class="login-feature-dot"></div>Daily digest — top 5 actions summary</div>
-          <div class="login-feature"><div class="login-feature-dot"></div>AI draft replies with tone control</div>
+        <div class="login-feat">
+          <div class="lf"><div class="lfd"></div>Full inbox sync — all emails, paginated</div>
+          <div class="lf"><div class="lfd"></div>Context engine — detects contradictions &amp; complements</div>
+          <div class="lf"><div class="lfd"></div>Smart triage — priority + category via AI</div>
+          <div class="lf"><div class="lfd"></div>AI reply with full thread context</div>
+          <div class="lf"><div class="lfd"></div>Tasks, rules, daily digest</div>
         </div>
       </div>
     </div>
@@ -320,52 +335,58 @@
     <!-- INBOX -->
     <div class="screen" id="screen-inbox" style="flex-direction:row">
       <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0">
-        <div class="inbox-toolbar">
-          <span class="inbox-title" id="inbox-count">Loading...</span>
-          <div class="filter-chips">
+        <div class="itoolbar">
+          <span class="ititle" id="inbox-count">—</span>
+          <div class="chips">
             <span class="chip active" onclick="setChip(this,'all')">All</span>
-            <span class="chip urgent-chip" onclick="setChip(this,'urgent')">Urgent</span>
+            <span class="chip ch-urgent" onclick="setChip(this,'urgent')">Urgent</span>
             <span class="chip" onclick="setChip(this,'action')">Action</span>
             <span class="chip" onclick="setChip(this,'meeting')">Meeting</span>
+            <span class="chip ch-contra" onclick="setChip(this,'contra')">⚠ Contra</span>
+            <span class="chip" onclick="setChip(this,'compl')">✦ Compl</span>
             <span class="chip" onclick="setChip(this,'unread')">Unread</span>
           </div>
-          <div class="toolbar-right">
-            <button class="btn btn-ghost btn-sm" onclick="archiveSelected()">Archive sel.</button>
-            <button class="btn btn-ghost btn-sm" onclick="markReadSelected()">Mark read</button>
+          <div class="tbar-r">
+            <button class="btn btn-ghost btn-sm" onclick="archiveSel()">Archive sel</button>
+            <button class="btn btn-ghost btn-sm" onclick="markReadSel()">Mark read</button>
           </div>
         </div>
-        <div class="email-list" id="email-list">
-          <div class="empty-state"><div class="empty-icon">📬</div><div class="empty-text">Sign in to load inbox</div></div>
+        <div class="elist" id="elist">
+          <div class="empty"><div class="ei">📬</div><div class="et">Sign in to sync your inbox</div></div>
         </div>
       </div>
       <!-- Thread Panel -->
-      <div class="thread-panel hidden" id="thread-panel">
-        <div class="thread-header">
-          <div class="thread-subject" id="thread-subject">—</div>
-          <div class="thread-meta" id="thread-meta"></div>
+      <div class="tpanel hidden" id="tpanel">
+        <div class="thead">
+          <div class="tsubj" id="tsubj">—</div>
+          <div class="tmeta" id="tmeta"></div>
         </div>
-        <div class="thread-actions-bar">
+        <div class="ctx-panel hidden" id="ctx-panel">
+          <div class="ctx-title">Context Signals</div>
+          <div id="ctx-items"></div>
+        </div>
+        <div class="tabbar">
           <button class="btn btn-primary btn-sm" onclick="generateReply()">✦ Draft Reply</button>
-          <button class="btn btn-ghost btn-sm" onclick="createTaskFromEmail()">+ Task</button>
+          <button class="btn btn-ghost btn-sm" onclick="createTask()">+ Task</button>
           <button class="btn btn-ghost btn-sm" onclick="saveEmail()">★ Save</button>
           <button class="btn btn-ghost btn-sm" onclick="archiveThread()">Archive</button>
           <button class="btn btn-ghost btn-sm" onclick="closeThread()">✕</button>
         </div>
-        <div class="thread-body" id="thread-body"></div>
-        <div class="reply-box hidden" id="reply-box">
-          <div class="reply-tabs">
-            <button class="reply-tab active" onclick="setReplyTab(this)">Write</button>
-            <button class="reply-tab" onclick="setReplyTab(this)">Preview</button>
+        <div class="tbody" id="tbody"></div>
+        <div class="rbox hidden" id="rbox">
+          <div class="rtabs">
+            <button class="rtab active" onclick="setRTab(this)">Write</button>
+            <button class="rtab" onclick="setRTab(this)">Preview</button>
           </div>
-          <div class="reply-content">
-            <textarea class="reply-textarea" id="reply-textarea" rows="5" placeholder="Your reply..."></textarea>
-            <div class="reply-footer">
-              <div class="reply-tone">
-                <button class="tone-chip active" onclick="setTone(this,'formal')">Formal</button>
-                <button class="tone-chip" onclick="setTone(this,'concise')">Concise</button>
-                <button class="tone-chip" onclick="setTone(this,'detailed')">Detailed</button>
+          <div class="rcontent">
+            <textarea class="rta" id="rta" rows="5" placeholder="Your reply..."></textarea>
+            <div class="rfooter">
+              <div class="tones">
+                <button class="tone active" onclick="setTone(this,'formal')">Formal</button>
+                <button class="tone" onclick="setTone(this,'concise')">Concise</button>
+                <button class="tone" onclick="setTone(this,'detailed')">Detailed</button>
               </div>
-              <div style="display:flex;gap:6px">
+              <div style="display:flex;gap:5px">
                 <button class="btn btn-ghost btn-sm" onclick="generateReply()">↻ Redo</button>
                 <button class="btn btn-primary btn-sm" onclick="sendReply()">Send →</button>
               </div>
@@ -377,33 +398,24 @@
 
     <!-- TASKS -->
     <div class="screen" id="screen-tasks">
-      <div class="screen-content">
-        <div class="section-header">
-          <span class="section-title">Tasks &amp; Reminders</span>
-          <button class="btn btn-primary btn-sm" onclick="openAddTask()">+ Add Task</button>
-        </div>
-        <div id="tasks-list"><div class="empty-state"><div class="empty-icon">✓</div><div class="empty-text">No tasks yet. Flag emails to create tasks.</div></div></div>
+      <div class="scontent">
+        <div class="sh"><span class="stitle">Tasks &amp; Reminders</span><button class="btn btn-primary btn-sm" onclick="openAddTask()">+ Add</button></div>
+        <div id="tasks-list"><div class="empty"><div class="ei">✓</div><div class="et">No tasks yet</div></div></div>
       </div>
     </div>
 
     <!-- DIGEST -->
     <div class="screen" id="screen-digest">
-      <div class="screen-content">
-        <div class="section-header">
-          <span class="section-title">Daily Digest</span>
-          <button class="btn btn-primary btn-sm" onclick="generateDigest()">✦ Generate</button>
-        </div>
-        <div id="digest-content"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">Click Generate to create today's digest</div></div></div>
+      <div class="scontent">
+        <div class="sh"><span class="stitle">Daily Digest</span><button class="btn btn-primary btn-sm" onclick="generateDigest()">✦ Generate</button></div>
+        <div id="digest-content"><div class="empty"><div class="ei">📋</div><div class="et">Click Generate</div></div></div>
       </div>
     </div>
 
     <!-- RULES -->
     <div class="screen" id="screen-rules">
-      <div class="screen-content">
-        <div class="section-header">
-          <span class="section-title">Auto-Read Rules</span>
-          <button class="btn btn-primary btn-sm" onclick="openAddRule()">+ Add Rule</button>
-        </div>
+      <div class="scontent">
+        <div class="sh"><span class="stitle">Auto-Read Rules</span><button class="btn btn-primary btn-sm" onclick="openAddRule()">+ Add Rule</button></div>
         <div id="rules-list"></div>
       </div>
     </div>
@@ -411,624 +423,778 @@
   </div>
 </div>
 
+<!-- STATUS BAR -->
 <div class="statusbar">
-  <span class="status-item"><span class="status-dot green"></span>G_TOOL</span>
-  <span class="status-item" id="status-msg">Ready</span>
-  <span class="status-item" style="margin-left:auto" id="status-cache">—</span>
+  <span class="sbi" id="sb-left">G_TOOL</span>
+  <span class="sbi" id="sb-mid"></span>
+  <span class="sbi" style="margin-left:auto" id="sb-right"></span>
 </div>
 
-<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
-  <div class="modal" id="modal-content"></div>
-</div>
-<div class="toast-container" id="toast-container"></div>
+<!-- MODAL -->
+<div class="movl" id="movl" onclick="closeMOvl(event)"><div class="modal" id="mcontent"></div></div>
+<div class="tc" id="tc"></div>
 
 <script>
-// ─── CONFIG ────────────────────────────────────────────
+// ═══════════════════════════ CONFIG ═══════════════════════════
 const CLIENT_ID = '249250925827-0tt0t6letpbmomkgdq6jm7pto7tpg2iq.apps.googleusercontent.com';
 const SCOPES = 'https://www.googleapis.com/auth/gmail.modify';
-const SUPABASE_URL = 'https://bigfejxfaactgpiccezu.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpZ2ZlanhmYWFjdGdwaWNjZXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4OTY1OTAsImV4cCI6MjA4ODQ3MjU5MH0.GsrMJWIQtWN9bO4X1IPwJplxB9ebawZKxWeAiktAaf4';
-const CLAUDE_API = 'https://api.anthropic.com/v1/messages';
+const SB_URL = 'https://bigfejxfaactgpiccezu.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpZ2ZlanhmYWFjdGdwaWNjZXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4OTY1OTAsImV4cCI6MjA4ODQ3MjU5MH0.GsrMJWIQtWN9bO4X1IPwJplxB9ebawZKxWeAiktAaf4';
+const API = 'https://api.anthropic.com/v1/messages';
 const HAIKU = 'claude-haiku-4-5-20251001';
 const SONNET = 'claude-sonnet-4-20250514';
+const BATCH = 20; // classify batch size
 
-// ─── STATE ─────────────────────────────────────────────
+// ═══════════════════════════ STATE ════════════════════════════
 const S = {
-  user: null, token: null,
-  emails: [], filtered: [],
-  filter: 'all',
-  selectedEmail: null,
-  tasks: [], rules: [], saved: [],
-  tone: 'formal',
-  processing: false
+  user:null, token:null,
+  emails:[], filtered:[],
+  filter:'all',
+  sel:null,
+  tasks:[], rules:[], saved:[],
+  tone:'formal',
+  syncing:false,
+  totalFetched:0,
+  lastSync:null
 };
 
-// ─── GOOGLE AUTH ───────────────────────────────────────
+// ═══════════════════════════ AUTH ═════════════════════════════
 function signIn() {
-  // Use exact origin only — no path, no trailing slash
-  const origin = location.origin;
-  const redirectUri = origin + location.pathname.replace(/\/?$/, '/');
+  const redirectUri = location.origin + location.pathname.replace(/\/?$/,'/');
   const p = new URLSearchParams({
-    client_id: CLIENT_ID,
-    redirect_uri: redirectUri,
-    response_type: 'token',
-    scope: SCOPES,
-    prompt: 'select_account',
-    include_granted_scopes: 'true'
+    client_id:CLIENT_ID, redirect_uri:redirectUri,
+    response_type:'token', scope:SCOPES, prompt:'select_account'
   });
   location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + p;
 }
-
-function signOut() {
-  localStorage.removeItem('gt_token');
-  location.replace(location.pathname);
-}
+function signOut() { localStorage.removeItem('gt'); location.replace(location.pathname); }
 
 async function boot() {
   const hash = location.hash;
   if (hash && hash.includes('access_token')) {
     const p = new URLSearchParams(hash.slice(1));
     const tok = p.get('access_token');
-    const exp = parseInt(p.get('expires_in') || '3600');
     if (tok) {
-      localStorage.setItem('gt_token', JSON.stringify({ tok, exp: Date.now() + exp * 1000 }));
-      history.replaceState({}, '', location.pathname);
+      const exp = parseInt(p.get('expires_in')||'3600');
+      localStorage.setItem('gt', JSON.stringify({tok, exp:Date.now()+exp*1000}));
+      history.replaceState({},'',(location.pathname+location.search).replace(/\/$/,'')+'/');
       S.token = tok;
-      await initApp();
-      return;
+      await initApp(); return;
     }
   }
-  const saved = localStorage.getItem('gt_token');
-  if (saved) {
-    try {
-      const d = JSON.parse(saved);
-      if (d.exp > Date.now()) { S.token = d.tok; await initApp(); return; }
-    } catch(e) {}
-    localStorage.removeItem('gt_token');
-  }
+  try {
+    const d = JSON.parse(localStorage.getItem('gt')||'null');
+    if (d && d.exp > Date.now()) { S.token = d.tok; await initApp(); }
+  } catch(e) {}
 }
 
 async function initApp() {
-  setStatus('Loading profile...');
+  setStat('Loading profile...');
   try {
-    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + S.token } });
+    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+S.token}});
     S.user = await r.json();
-    document.getElementById('user-avatar').textContent = (S.user.name || 'U')[0].toUpperCase();
-    document.getElementById('user-name-display').textContent = S.user.email;
-    document.getElementById('user-chip').classList.remove('hidden');
-    document.getElementById('btn-refresh').style.display = '';
-    document.getElementById('btn-signout').style.display = '';
-    document.getElementById('sidebar').classList.remove('hidden');
+    document.getElementById('uav').textContent = (S.user.name||'U')[0].toUpperCase();
+    document.getElementById('uname').textContent = S.user.email;
+    ['uchip','btn-sync','btn-so','sidebar','sync-bar'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
     showScreen('inbox');
     await loadUserData();
-    await fetchEmails();
-  } catch(e) { toast('Auth error: ' + e.message, 'error'); }
+    await fullSync();
+  } catch(e) { toast('Auth error: '+e.message,'error'); }
 }
 
-// ─── GMAIL API ─────────────────────────────────────────
-async function gapi(path, opts = {}) {
-  const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me' + path, {
-    ...opts,
-    headers: { Authorization: 'Bearer ' + S.token, 'Content-Type': 'application/json', ...(opts.headers || {}) }
+// ═══════════════════════════ GMAIL ════════════════════════════
+async function gapi(path, opts={}) {
+  const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me'+path, {
+    ...opts, headers:{Authorization:'Bearer '+S.token,'Content-Type':'application/json',...(opts.headers||{})}
   });
-  if (r.status === 401) { signOut(); throw new Error('Session expired'); }
-  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error?.message || r.status); }
-  if (r.status === 204) return {};
+  if (r.status===401) { signOut(); throw new Error('Session expired'); }
+  if (!r.ok) { const e=await r.json().catch(()=>({})); throw new Error(e.error?.message||r.status); }
+  if (r.status===204) return {};
   return r.json();
 }
 
-async function fetchEmails() {
-  if (S.processing) return;
-  S.processing = true;
-  setProgress(10);
-  setStatus('Fetching inbox...');
-  showSkeleton(8);
-  try {
-    const data = await gapi('/messages?maxResults=50&labelIds=INBOX');
-    const msgs = data.messages || [];
-    setProgress(20);
+// Full sync — fetch ALL emails paginated, process only new ones
+async function fullSync() {
+  if (S.syncing) return;
+  S.syncing = true;
+  setDot('pulse'); setStat('Starting full sync...');
+  setProgress(2);
+  showSkeleton(10);
 
-    // Get cached from Supabase
-    const ids = msgs.map(m => m.id);
-    const cached = await getCachedEmails(ids);
+  try {
+    // 1. Get all message IDs from Gmail (paginated)
+    setStat('Fetching all email IDs...');
+    const allIds = await fetchAllIds();
+    S.totalFetched = allIds.length;
+    setStat(`Found ${allIds.length} emails. Checking cache...`);
+    setProgress(15);
+
+    // 2. Get cached emails from Supabase
+    const cached = await getCached(allIds);
     const cachedMap = {};
     cached.forEach(e => cachedMap[e.id] = e);
+    const uncachedIds = allIds.filter(id => !cachedMap[id]);
 
-    const uncached = msgs.filter(m => !cachedMap[m.id]).map(m => m.id);
-    setStatus(`Fetching ${uncached.length} new, ${cached.length} from cache...`);
-    setProgress(30);
+    setStat(`Cache: ${cached.length} hit. Fetching ${uncachedIds.length} new...`);
+    setProgress(20);
 
-    // Batch fetch uncached
+    // 3. Fetch uncached in batches of 50
     const newRaw = [];
-    const bsz = 10;
-    for (let i = 0; i < uncached.length; i += bsz) {
-      const batch = uncached.slice(i, i + bsz);
-      const fetched = await Promise.all(batch.map(id => gapi('/messages/' + id + '?format=full')));
+    const fbatch = 50;
+    for (let i=0; i<uncachedIds.length; i+=fbatch) {
+      const slice = uncachedIds.slice(i, i+fbatch);
+      const fetched = await Promise.all(slice.map(id => gapi('/messages/'+id+'?format=full')));
       newRaw.push(...fetched);
-      setProgress(30 + Math.round((i / uncached.length) * 40));
+      const pct = 20 + Math.round((i/uncachedIds.length)*30);
+      setProgress(pct);
+      setStat(`Fetched ${newRaw.length}/${uncachedIds.length} new emails...`);
     }
 
+    setProgress(50);
     const parsed = newRaw.map(parseEmail);
-    setProgress(70);
-    setStatus('AI classifying...');
 
-    // Split auto vs human
-    const auto = parsed.filter(isAutoEmail).map(e => ({ ...e, priority:'fyi', category:'newsletter', summary:'Auto-classified' }));
-    const toAI = parsed.filter(e => !isAutoEmail(e));
+    // 4. Client-side auto-filter (no AI call)
+    const autoEmails = parsed.filter(isAutoEmail).map(e=>({...e,priority:'fyi',category:'newsletter',summary:'Auto-classified: newsletter/notification',context:[]}));
+    const toAI = parsed.filter(e=>!isAutoEmail(e));
 
-    // Classify in parallel
-    const classified = await Promise.all(toAI.map(classifyEmail));
+    // 5. AI classify in batches
+    setStat(`AI classifying ${toAI.length} emails...`);
+    const classified = [];
+    for (let i=0; i<toAI.length; i+=BATCH) {
+      const batch = toAI.slice(i,i+BATCH);
+      const results = await Promise.all(batch.map(classifyEmail));
+      classified.push(...results);
+      const pct = 50 + Math.round((i/toAI.length)*25);
+      setProgress(pct); setStat(`Classified ${classified.length}/${toAI.length}...`);
+    }
+
+    // 6. Apply rules
+    const allProcessed = [...classified,...autoEmails].map(applyRules);
+
+    // 7. Merge with cached
+    S.emails = [...allProcessed,...cached].sort((a,b)=>b.date-a.date);
+    setProgress(75);
+
+    // 8. Context analysis — find contradictions/complements
+    setStat('Running context analysis...');
+    await runContextAnalysis(allProcessed);
     setProgress(90);
 
-    // Apply rules
-    const processed = [...classified, ...auto].map(applyRules);
+    // 9. Save to Supabase
+    if (allProcessed.length) saveToCache(allProcessed);
 
-    // Save new to cache
-    if (processed.length) saveEmailsCache(processed);
-
-    // Merge
-    S.emails = [...processed, ...cached].sort((a, b) => b.date - a.date);
-    applyFilter();
-    updateBadges();
+    // 10. Done
+    S.lastSync = new Date();
+    S.emails = S.emails.sort((a,b)=>b.date-a.date);
+    applyFilter(); updateBadges();
     setProgress(100);
-    setStatus(S.emails.length + ' emails loaded');
-    document.getElementById('status-cache').textContent = 'Cache: ' + cached.length + ' hit';
-  } catch(e) {
-    toast('Error: ' + e.message, 'error');
-    setStatus('Error');
-  }
-  S.processing = false;
-  setTimeout(() => setProgress(0), 500);
+    setDot('green'); setStat(`Synced — ${S.emails.length} emails`);
+    document.getElementById('slast').textContent = 'Last sync: ' + S.lastSync.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('scounts').textContent = `${S.emails.length} total · ${cached.length} cached · ${allProcessed.length} new`;
+    setTimeout(()=>setProgress(0),600);
+
+  } catch(e) { toast('Sync error: '+e.message,'error'); setStat('Sync failed'); setDot(''); }
+  S.syncing = false;
+}
+
+// Delta sync — only new emails since last sync
+async function syncEmails() {
+  if (S.syncing) { toast('Sync in progress...','error'); return; }
+  if (!S.lastSync) { await fullSync(); return; }
+
+  S.syncing = true;
+  setDot('pulse'); setStat('Syncing new emails...');
+  setProgress(10);
+
+  try {
+    const after = Math.floor(S.lastSync.getTime()/1000);
+    const data = await gapi('/messages?maxResults=100&labelIds=INBOX&q=after:'+after);
+    const msgs = data.messages || [];
+
+    if (!msgs.length) { setStat('Inbox up to date'); setDot('green'); S.syncing=false; setProgress(0); return; }
+
+    setStat(`Fetching ${msgs.length} new emails...`);
+    const fetched = await Promise.all(msgs.map(m=>gapi('/messages/'+m.id+'?format=full')));
+    const parsed = fetched.map(parseEmail);
+    const toAI = parsed.filter(e=>!isAutoEmail(e));
+    const auto = parsed.filter(isAutoEmail).map(e=>({...e,priority:'fyi',category:'newsletter',summary:'Auto-classified',context:[]}));
+    const classified = await Promise.all(toAI.map(classifyEmail));
+    const allNew = [...classified,...auto].map(applyRules);
+
+    await runContextAnalysis(allNew);
+    saveToCache(allNew);
+
+    // Remove dupes and prepend
+    const existingIds = new Set(S.emails.map(e=>e.id));
+    const fresh = allNew.filter(e=>!existingIds.has(e.id));
+    S.emails = [...fresh,...S.emails].sort((a,b)=>b.date-a.date);
+    S.lastSync = new Date();
+    applyFilter(); updateBadges();
+    setProgress(100); setDot('green');
+    setStat(`+${fresh.length} new emails synced`);
+    setTimeout(()=>setProgress(0),600);
+    if (fresh.length) toast(`${fresh.length} new emails synced`,'success');
+
+  } catch(e) { toast('Sync error: '+e.message,'error'); setStat('Sync failed'); setDot(''); }
+  S.syncing = false;
+}
+
+async function fetchAllIds() {
+  const ids = [];
+  let pageToken = null;
+  do {
+    const url = '/messages?maxResults=500&labelIds=INBOX' + (pageToken?'&pageToken='+pageToken:'');
+    const data = await gapi(url);
+    (data.messages||[]).forEach(m=>ids.push(m.id));
+    pageToken = data.nextPageToken||null;
+    setStat(`Fetched ${ids.length} IDs...`);
+  } while(pageToken);
+  return ids;
 }
 
 function parseEmail(msg) {
-  const h = {};
-  (msg.payload?.headers || []).forEach(hh => h[hh.name.toLowerCase()] = hh.value);
-  const parts = [];
-  function ep(p) {
-    if (!p) return;
-    if (p.mimeType === 'text/plain' && p.body?.data) {
-      try { parts.push(atob(p.body.data.replace(/-/g,'+').replace(/_/g,'/'))); } catch(e) {}
-    }
-    if (p.parts) p.parts.forEach(ep);
-  }
+  const h={};
+  (msg.payload?.headers||[]).forEach(hh=>h[hh.name.toLowerCase()]=hh.value);
+  const parts=[];
+  function ep(p){if(!p)return;if(p.mimeType==='text/plain'&&p.body?.data){try{parts.push(atob(p.body.data.replace(/-/g,'+').replace(/_/g,'/')));}catch(e){}}if(p.parts)p.parts.forEach(ep);}
   ep(msg.payload);
-  const fromRaw = h.from || '';
-  const fromName = fromRaw.replace(/<.*>/, '').replace(/"/g,'').trim() || fromRaw;
-  const fromEmail = fromRaw.match(/<(.+)>/)?.[1] || fromRaw;
+  const fromRaw=h.from||'';
   return {
-    id: msg.id, threadId: msg.threadId,
-    subject: h.subject || '(no subject)',
-    from: fromRaw, fromName, fromEmail,
-    to: h.to || '', date: parseInt(msg.internalDate),
-    snippet: msg.snippet || '',
-    body: parts.join('\n').slice(0, 2000),
-    labelIds: msg.labelIds || [],
-    unread: (msg.labelIds || []).includes('UNREAD'),
-    priority: 'normal', category: 'info', summary: ''
+    id:msg.id, threadId:msg.threadId,
+    subject:h.subject||'(no subject)',
+    from:fromRaw,
+    fromName:fromRaw.replace(/<.*>/,'').replace(/"/g,'').trim()||fromRaw,
+    fromEmail:fromRaw.match(/<(.+)>/)?.[1]||fromRaw,
+    to:h.to||'', date:parseInt(msg.internalDate),
+    snippet:msg.snippet||'',
+    body:parts.join('\n').slice(0,2000),
+    labelIds:msg.labelIds||[],
+    unread:(msg.labelIds||[]).includes('UNREAD'),
+    priority:'normal', category:'info', summary:'', context:[]
   };
 }
 
 function isAutoEmail(e) {
-  const f = (e.from || '').toLowerCase();
-  const s = (e.subject || '').toLowerCase();
-  return ['noreply','no-reply','donotreply','newsletter','notifications@','alerts@','updates@','mailer@','postmaster@'].some(p => f.includes(p))
-    || ['unsubscribe','your receipt','order confirmed','invoice #'].some(p => s.includes(p));
+  const f=(e.from||'').toLowerCase(), s=(e.subject||'').toLowerCase();
+  return ['noreply','no-reply','donotreply','newsletter','notifications@','alerts@','updates@','mailer@','postmaster@'].some(p=>f.includes(p))
+    ||['unsubscribe','your receipt','order confirmed','invoice #'].some(p=>s.includes(p));
 }
 
 function applyRules(email) {
-  for (const rule of S.rules) {
-    if (!rule.enabled) continue;
-    let match = false;
-    const val = rule.value.toLowerCase();
-    if (rule.type === 'sender') match = email.from.toLowerCase().includes(val);
-    if (rule.type === 'domain') match = email.fromEmail.toLowerCase().includes(val);
-    if (rule.type === 'subject') match = email.subject.toLowerCase().includes(val);
-    if (match) {
-      if (rule.action === 'mark_read') email.unread = false;
-      if (rule.action === 'mark_fyi') email.priority = 'fyi';
-      if (rule.action === 'archive') email.labelIds = (email.labelIds || []).filter(l => l !== 'INBOX');
-      email.ruleApplied = rule.name;
+  for(const r of S.rules){
+    if(!r.enabled)continue;
+    const val=(r.value||'').toLowerCase();
+    let match=false;
+    if(r.type==='sender')match=email.from.toLowerCase().includes(val);
+    if(r.type==='domain')match=email.fromEmail.toLowerCase().includes(val);
+    if(r.type==='subject')match=email.subject.toLowerCase().includes(val);
+    if(match){
+      if(r.action==='mark_read')email.unread=false;
+      if(r.action==='mark_fyi')email.priority='fyi';
+      if(r.action==='archive')email.labelIds=(email.labelIds||[]).filter(l=>l!=='INBOX');
+      email.ruleApplied=r.name;
     }
   }
   return email;
 }
 
-// ─── AI CLASSIFY (Haiku) ───────────────────────────────
-async function classifyEmail(email) {
-  try {
-    const r = await fetch(CLAUDE_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': '', 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({
-        model: HAIKU, max_tokens: 200,
-        system: 'Email classifier. Return ONLY valid JSON. No markdown, no explanation.',
-        messages: [{ role: 'user', content: `Classify this email. Return: {"priority":"urgent|high|normal|fyi","category":"action|meeting|info|newsletter","summary":"max 12 words"}\n\nFrom: ${email.from}\nSubject: ${email.subject}\nBody: ${email.body.slice(0,400)}` }]
-      })
-    });
-    const d = await r.json();
-    const txt = (d.content?.[0]?.text || '{}').replace(/```json|```/g,'').trim();
-    const obj = JSON.parse(txt);
-    return { ...email, priority: obj.priority || 'normal', category: obj.category || 'info', summary: obj.summary || email.snippet.slice(0,80) };
-  } catch(e) {
-    return { ...email, priority: 'normal', category: 'info', summary: email.snippet.slice(0,80) };
+// ═══════════════════════════ CONTEXT ENGINE ════════════════════
+// Jaccard similarity on subject keywords
+function tokenize(str) {
+  return new Set((str||'').toLowerCase()
+    .replace(/re:|fwd:|fw:/gi,'')
+    .split(/\W+/)
+    .filter(w=>w.length>3&&!['your','with','this','that','from','have','will','been','they','what','when','where'].includes(w)));
+}
+function jaccard(a,b) {
+  const inter=[...a].filter(x=>b.has(x)).length;
+  const union=new Set([...a,...b]).size;
+  return union===0?0:inter/union;
+}
+
+function findRelated(email, allEmails, limit=5) {
+  const eTok = tokenize(email.subject+' '+email.body.slice(0,200));
+  const eDomain = email.fromEmail.split('@')[1]||'';
+  const scored = allEmails
+    .filter(e=>e.id!==email.id)
+    .map(e=>{
+      let score=0;
+      // Same thread — highest priority
+      if(e.threadId===email.threadId) score+=10;
+      // Same sender domain
+      const eDom2=(e.fromEmail.split('@')[1]||'');
+      if(eDomain&&eDom2===eDomain) score+=3;
+      // Subject keyword similarity
+      const eTok2=tokenize(e.subject+' '+e.body.slice(0,200));
+      score+=jaccard(eTok,eTok2)*8;
+      return {email:e,score};
+    })
+    .filter(x=>x.score>1)
+    .sort((a,b)=>b.score-a.score)
+    .slice(0,limit)
+    .map(x=>x.email);
+  return scored;
+}
+
+async function runContextAnalysis(newEmails) {
+  // Only run on non-FYI emails with some body content
+  const eligible = newEmails.filter(e=>e.priority!=='fyi'&&e.body.length>50);
+  if (!eligible.length) return;
+
+  // Process in batches of 5 (Sonnet calls are expensive)
+  const cbatch = 5;
+  for(let i=0;i<eligible.length;i+=cbatch){
+    const batch = eligible.slice(i,i+cbatch);
+    await Promise.all(batch.map(async e=>{
+      const related = findRelated(e, S.emails.concat(newEmails), 3);
+      if(!related.length){e.context=[];return;}
+      e.context = await detectContextSignals(e, related);
+    }));
   }
 }
 
-// ─── AI REPLY (Sonnet) ─────────────────────────────────
-async function generateReply() {
-  const email = S.selectedEmail;
-  if (!email) return;
-  const rb = document.getElementById('reply-box');
-  const ta = document.getElementById('reply-textarea');
-  rb.classList.remove('hidden');
-  ta.value = '⏳ Generating...';
-  ta.disabled = true;
+async function detectContextSignals(email, relatedEmails) {
+  if(!relatedEmails.length) return [];
   try {
-    const r = await fetch(CLAUDE_API, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': '', 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({
-        model: SONNET, max_tokens: 600,
-        system: `You are a professional email assistant for a SaaS executive. Write a ${S.tone} reply. Just the reply body, no subject.`,
-        messages: [{ role: 'user', content: `Reply to:\nFrom: ${email.from}\nSubject: ${email.subject}\nBody: ${email.body.slice(0,1000)}` }]
-      })
-    });
-    const d = await r.json();
-    ta.value = d.content?.[0]?.text || '';
-  } catch(e) { ta.value = ''; toast('Reply generation failed', 'error'); }
-  ta.disabled = false;
-}
+    const relStr = relatedEmails.map((r,i)=>
+      `[${i+1}] From: ${r.fromName} | Subject: ${r.subject} | Date: ${new Date(r.date).toLocaleDateString('en-IN')} | Summary: ${r.summary||r.snippet.slice(0,80)}`
+    ).join('\n');
 
-async function sendReply() {
-  const email = S.selectedEmail;
-  const body = document.getElementById('reply-textarea').value;
-  if (!email || !body.trim()) return;
-  const raw = btoa(unescape(encodeURIComponent(
-    `To: ${email.fromEmail}\r\nSubject: Re: ${email.subject}\r\nIn-Reply-To: ${email.id}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${body}`
-  ))).replace(/\+/g,'-').replace(/\//g,'_');
-  try {
-    await gapi('/messages/send', { method: 'POST', body: JSON.stringify({ raw, threadId: email.threadId }) });
-    toast('Reply sent ✓', 'success');
-    document.getElementById('reply-box').classList.add('hidden');
-  } catch(e) { toast('Send failed: ' + e.message, 'error'); }
-}
-
-// ─── THREAD VIEW ───────────────────────────────────────
-async function openEmail(id) {
-  const email = S.emails.find(e => e.id === id);
-  if (!email) return;
-  S.selectedEmail = email;
-  document.querySelectorAll('.email-item').forEach(el => el.classList.remove('selected'));
-  document.querySelector('[data-id="' + id + '"]')?.classList.add('selected');
-  document.getElementById('thread-panel').classList.remove('hidden');
-  document.getElementById('reply-box').classList.add('hidden');
-  document.getElementById('thread-subject').textContent = email.subject;
-  const meta = document.getElementById('thread-meta');
-  meta.innerHTML = `
-    <span class="thread-tag" style="border-color:var(--${email.priority});color:var(--${email.priority})">${email.priority.toUpperCase()}</span>
-    <span class="thread-tag">${email.category}</span>
-    ${email.ruleApplied ? `<span class="thread-tag">🔧 ${email.ruleApplied}</span>` : ''}
-  `;
-  const tb = document.getElementById('thread-body');
-  tb.innerHTML = '<div style="padding:16px;font-size:12px;color:var(--text3)">Loading thread...</div>';
-  try {
-    const thread = await gapi('/threads/' + email.threadId + '?format=full');
-    tb.innerHTML = (thread.messages || []).map(m => {
-      const h = {};
-      (m.payload?.headers || []).forEach(hh => h[hh.name.toLowerCase()] = hh.value);
-      const parts = [];
-      function ep(p) { if (!p) return; if (p.mimeType==='text/plain'&&p.body?.data) { try{parts.push(atob(p.body.data.replace(/-/g,'+').replace(/_/g,'/')));}catch(e){} } if(p.parts)p.parts.forEach(ep); }
-      ep(m.payload);
-      const body = parts.join('\n') || m.snippet || '';
-      return `<div class="thread-message">
-        <div class="msg-from">${esc(h.from||'—')}</div>
-        <div class="msg-time">${new Date(parseInt(m.internalDate)).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}</div>
-        <div class="msg-body">${esc(body.slice(0,3000))}</div>
-      </div>`;
-    }).join('');
-  } catch(e) {
-    tb.innerHTML = `<div class="thread-message"><div class="msg-from">${esc(email.from)}</div><div class="msg-body">${esc(email.snippet)}</div></div>`;
-  }
-  if (email.unread) {
-    email.unread = false;
-    document.querySelector('[data-id="' + id + '"]')?.classList.remove('unread');
-    gapi('/messages/' + id + '/modify', { method:'POST', body:JSON.stringify({removeLabelIds:['UNREAD']}) }).catch(()=>{});
-    updateBadges();
-  }
-}
-
-function closeThread() { document.getElementById('thread-panel').classList.add('hidden'); S.selectedEmail = null; }
-function archiveThread() {
-  if (!S.selectedEmail) return;
-  gapi('/messages/' + S.selectedEmail.id + '/modify', { method:'POST', body:JSON.stringify({removeLabelIds:['INBOX']}) })
-    .then(() => { toast('Archived ✓','success'); closeThread(); S.emails = S.emails.filter(e=>e.id!==S.selectedEmail?.id); applyFilter(); }).catch(e=>toast('Error: '+e.message,'error'));
-}
-function saveEmail() {
-  if (!S.selectedEmail || S.saved.find(e=>e.id===S.selectedEmail.id)) { toast('Already saved','error'); return; }
-  S.saved.push(S.selectedEmail);
-  saveUserData('saved_emails', S.saved);
-  updateBadges(); toast('Saved ★','success');
-}
-function archiveSelected() {
-  const ch = document.querySelectorAll('.email-check:checked');
-  if (!ch.length) { toast('Select emails first','error'); return; }
-  Promise.all([...ch].map(c => gapi('/messages/' + c.dataset.id + '/modify', {method:'POST',body:JSON.stringify({removeLabelIds:['INBOX']})})))
-    .then(() => { toast('Archived '+ch.length+' ✓','success'); fetchEmails(); });
-}
-function markReadSelected() {
-  const ch = document.querySelectorAll('.email-check:checked');
-  if (!ch.length) { toast('Select emails first','error'); return; }
-  Promise.all([...ch].map(c => gapi('/messages/' + c.dataset.id + '/modify', {method:'POST',body:JSON.stringify({removeLabelIds:['UNREAD']})})))
-    .then(() => { toast('Marked read ✓','success'); fetchEmails(); });
-}
-
-// ─── TASKS ─────────────────────────────────────────────
-function createTaskFromEmail() {
-  if (!S.selectedEmail) return;
-  openModal(`<div class="modal-title">+ Create Task</div>
-    <div class="form-group"><label class="form-label">Task Title</label><input class="form-input" id="ti" value="${esc(S.selectedEmail.subject)}" /></div>
-    <div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="td" type="date" value="${new Date(Date.now()+172800000).toISOString().slice(0,10)}" /></div>
-    <div class="form-group"><label class="form-label">Notes</label><input class="form-input" id="tn" placeholder="Optional..." /></div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveTask()">Create</button></div>`);
-}
-function openAddTask() {
-  openModal(`<div class="modal-title">+ New Task</div>
-    <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="ti" placeholder="Task description..." /></div>
-    <div class="form-group"><label class="form-label">Due Date</label><input class="form-input" id="td" type="date" value="${new Date(Date.now()+86400000).toISOString().slice(0,10)}" /></div>
-    <div class="form-group"><label class="form-label">Notes</label><input class="form-input" id="tn" placeholder="Optional..." /></div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveTask()">Create</button></div>`);
-}
-function saveTask() {
-  const title = document.getElementById('ti')?.value;
-  if (!title) return;
-  const task = { id: Date.now(), title, due: document.getElementById('td')?.value, notes: document.getElementById('tn')?.value, from: S.selectedEmail?.fromName || '', emailId: S.selectedEmail?.id, done: false };
-  S.tasks.push(task);
-  saveUserData('tasks', S.tasks);
-  updateBadges(); renderTasks(); closeModal(); toast('Task created ✓','success');
-}
-function toggleTask(id) {
-  const t = S.tasks.find(t => t.id === id);
-  if (t) { t.done = !t.done; saveUserData('tasks', S.tasks); renderTasks(); }
-}
-function deleteTask(id) { S.tasks = S.tasks.filter(t => t.id !== id); saveUserData('tasks', S.tasks); updateBadges(); renderTasks(); }
-function renderTasks() {
-  const el = document.getElementById('tasks-list');
-  if (!S.tasks.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">✓</div><div class="empty-text">No tasks yet.</div></div>'; return; }
-  const sorted = [...S.tasks].sort((a,b) => a.done-b.done || new Date(a.due)-new Date(b.due));
-  el.innerHTML = sorted.map(t => {
-    const due = new Date(t.due); const today = new Date(); today.setHours(0,0,0,0);
-    const dc = !t.done ? (due<today?'overdue':due.getTime()===today.getTime()?'':'ok') : '';
-    return `<div class="task-item">
-      <div class="task-check ${t.done?'done':''}" onclick="toggleTask(${t.id})">${t.done?'✓':''}</div>
-      <div class="task-main">
-        <div class="task-title ${t.done?'done':''}">${esc(t.title)}</div>
-        <div class="task-meta">
-          ${t.from?`<span class="task-from">${esc(t.from)}</span>`:''}
-          ${t.due?`<span class="task-due ${dc}">${due.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span>`:''}
-          ${t.notes?`<span class="task-from">${esc(t.notes)}</span>`:''}
-        </div>
-      </div>
-      <button class="icon-btn" onclick="deleteTask(${t.id})">✕</button>
-    </div>`;
-  }).join('');
-}
-
-// ─── DIGEST ────────────────────────────────────────────
-async function generateDigest() {
-  const el = document.getElementById('digest-content');
-  el.innerHTML = '<div class="empty-state"><div class="spin" style="font-size:24px;opacity:0.5">◌</div><div class="empty-text">Generating...</div></div>';
-  const urgent = S.emails.filter(e => e.priority==='urgent').slice(0,5);
-  const action = S.emails.filter(e => e.category==='action').slice(0,5);
-  try {
-    const r = await fetch(CLAUDE_API, {
+    const r = await fetch(API,{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':'','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body:JSON.stringify({
-        model:SONNET,max_tokens:800,
-        system:'Executive email assistant. Return ONLY JSON: {"summary":"2 sentences","actions":[{"item":"action","from":"name"}],"insight":"1 key insight"}',
-        messages:[{role:'user',content:`Digest:\nURGENT:\n${urgent.map(e=>`- ${e.subject} (${e.fromName}): ${e.summary}`).join('\n')}\nACTION:\n${action.map(e=>`- ${e.subject} (${e.fromName}): ${e.summary}`).join('\n')}`}]
+        model:HAIKU, max_tokens:400,
+        system:'You are an email context analyzer. Return ONLY valid JSON array. No markdown.',
+        messages:[{role:'user',content:`Analyze this email against related emails and detect contradictions or complements.
+
+CURRENT EMAIL:
+From: ${email.fromName}
+Subject: ${email.subject}
+Body: ${email.body.slice(0,400)}
+
+RELATED EMAILS:
+${relStr}
+
+Return a JSON array of signals:
+[{"type":"contradiction"|"complement"|"thread","relatedIndex":1,"reason":"one sentence explanation max 12 words","relatedSubject":"subject of related email"}]
+
+Only include signals you are confident about. Empty array [] if no clear signals.`}]
       })
     });
     const d = await r.json();
-    const data = JSON.parse((d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim());
-    const today = new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
-    el.innerHTML = `<div class="digest-card">
-      <div class="digest-date">📋 DIGEST — ${today.toUpperCase()}</div>
-      <div class="digest-stat-row">
-        <div class="digest-stat"><div class="digest-stat-num">${S.emails.length}</div><div class="digest-stat-label">Total</div></div>
-        <div class="digest-stat"><div class="digest-stat-num" style="color:var(--urgent)">${urgent.length}</div><div class="digest-stat-label">Urgent</div></div>
-        <div class="digest-stat"><div class="digest-stat-num" style="color:var(--accent2)">${action.length}</div><div class="digest-stat-label">Action</div></div>
-        <div class="digest-stat"><div class="digest-stat-num">${S.emails.filter(e=>e.unread).length}</div><div class="digest-stat-label">Unread</div></div>
-      </div>
-      <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px;padding:12px;background:var(--surface2);border-radius:8px">${data.summary||''}</div>
-      <div class="section-title" style="margin-bottom:10px">TOP ACTIONS</div>
-      ${(data.actions||[]).map((a,i)=>`<div class="digest-action-item"><div class="dai-num">${i+1}.</div><div><div class="dai-text">${esc(a.item)}</div><div class="dai-from">${esc(a.from)}</div></div></div>`).join('')}
-      ${data.insight?`<div style="margin-top:12px;font-size:12px;color:var(--text2);padding:10px;background:rgba(0,212,170,0.05);border:1px solid rgba(0,212,170,0.15);border-radius:6px">💡 ${esc(data.insight)}</div>`:''}
-    </div>`;
-  } catch(e) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠</div><div class="empty-text">Failed to generate</div></div>'; }
-}
-
-// ─── RULES ─────────────────────────────────────────────
-function openAddRule() {
-  openModal(`<div class="modal-title">+ Auto Rule</div>
-    <div class="form-group"><label class="form-label">Rule Name</label><input class="form-input" id="rn" placeholder="e.g. Zoho Alerts" /></div>
-    <div class="form-group"><label class="form-label">Match Type</label><select class="form-select" id="rt"><option value="sender">Sender contains</option><option value="domain">Domain contains</option><option value="subject">Subject contains</option></select></div>
-    <div class="form-group"><label class="form-label">Match Value</label><input class="form-input" id="rv" placeholder="e.g. noreply@zoho.com" /></div>
-    <div class="form-group"><label class="form-label">Action</label><select class="form-select" id="ra"><option value="mark_read">Mark as read</option><option value="mark_fyi">Label as FYI</option><option value="archive">Archive</option></select></div>
-    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="saveRule()">Create</button></div>`);
-}
-function saveRule() {
-  const rule = { id:Date.now(), name:document.getElementById('rn')?.value, type:document.getElementById('rt')?.value, value:document.getElementById('rv')?.value, action:document.getElementById('ra')?.value, enabled:true };
-  if (!rule.name||!rule.value) return;
-  S.rules.push(rule); saveUserData('rules',S.rules); renderRules(); closeModal(); toast('Rule created ✓','success');
-}
-function toggleRule(id) { const r=S.rules.find(r=>r.id===id); if(r){r.enabled=!r.enabled;saveUserData('rules',S.rules);renderRules();} }
-function deleteRule(id) { S.rules=S.rules.filter(r=>r.id!==id); saveUserData('rules',S.rules); renderRules(); }
-function renderRules() {
-  const el = document.getElementById('rules-list');
-  const builtin = [
-    {id:-1,name:'Newsletter auto-filter',type:'sender',value:'noreply / unsubscribe',action:'mark_fyi',enabled:true,builtin:true},
-    {id:-2,name:'Auto-notifications',type:'sender',value:'notifications@ / alerts@',action:'mark_read',enabled:true,builtin:true}
-  ];
-  el.innerHTML = [...builtin,...S.rules].map(r=>`<div class="rule-item">
-    <div class="rule-toggle ${r.enabled?'on':''}" onclick="${r.builtin?'':` toggleRule(${r.id})`}"></div>
-    <div class="rule-main">
-      <div class="rule-name">${esc(r.name)} ${r.builtin?'<span style="font-size:10px;color:var(--text3)">(built-in)</span>':''}</div>
-      <div class="rule-desc">${r.type} contains "${esc(r.value)}"</div>
-      <div class="rule-action">→ ${r.action.replace('_',' ')}</div>
-    </div>
-    ${!r.builtin?`<button class="icon-btn" onclick="deleteRule(${r.id})">✕</button>`:''}
-  </div>`).join('');
-}
-
-// ─── SUPABASE ──────────────────────────────────────────
-async function sbReq(path, opts = {}) {
-  return fetch(SUPABASE_URL + path, {
-    ...opts,
-    headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json', Prefer: 'return=representation', ...(opts.headers||{}) }
-  });
-}
-
-async function getCachedEmails(ids) {
-  try {
-    const r = await sbReq('/rest/v1/gmail_emails?gmail_id=in.(' + ids.join(',') + ')&select=*');
-    if (!r.ok) return [];
-    const data = await r.json();
-    return (data||[]).map(e => ({
-      id: e.gmail_id, threadId: e.thread_id, subject: e.subject,
-      from: e.from_addr, fromName: e.from_name, fromEmail: e.from_email,
-      date: e.email_date, snippet: e.snippet, unread: e.unread,
-      priority: e.priority, category: e.category, summary: e.ai_summary, labelIds: []
+    const txt=(d.content?.[0]?.text||'[]').replace(/```json|```/g,'').trim();
+    const signals = JSON.parse(txt);
+    // Attach related email refs
+    return signals.map(s=>({
+      ...s,
+      relatedEmail: relatedEmails[s.relatedIndex-1]||null
     }));
   } catch(e) { return []; }
 }
 
-async function saveEmailsCache(emails) {
-  const rows = emails.map(e => ({ gmail_id:e.id, thread_id:e.threadId, subject:e.subject, from_addr:e.from, from_name:e.fromName, from_email:e.fromEmail, email_date:e.date, snippet:e.snippet, unread:e.unread, priority:e.priority, category:e.category, ai_summary:e.summary }));
-  try { await sbReq('/rest/v1/gmail_emails', {method:'POST',body:JSON.stringify(rows),headers:{Prefer:'resolution=merge-duplicates,return=minimal'}}); } catch(e){}
-}
-
-async function saveUserData(key, value) {
-  const userId = S.user?.sub || 'default';
-  try { await sbReq('/rest/v1/user_data', {method:'POST',body:JSON.stringify({user_id:userId,data_key:key,data_value:value}),headers:{Prefer:'resolution=merge-duplicates,return=minimal'}}); } catch(e){}
-}
-
-async function loadUserData() {
-  const userId = S.user?.sub || 'default';
+// ═══════════════════════════ CLASSIFY ═════════════════════════
+async function classifyEmail(email) {
   try {
-    const r = await sbReq('/rest/v1/user_data?user_id=eq.' + userId + '&select=*');
-    if (!r.ok) { renderRules(); return; }
-    const data = await r.json();
-    (data||[]).forEach(row => {
-      if (row.data_key==='tasks') S.tasks = row.data_value||[];
-      if (row.data_key==='rules') S.rules = row.data_value||[];
-      if (row.data_key==='saved_emails') S.saved = row.data_value||[];
+    const r = await fetch(API,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':'','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:HAIKU, max_tokens:150,
+        system:'Email classifier. Return ONLY valid JSON.',
+        messages:[{role:'user',content:`{"priority":"urgent|high|normal|fyi","category":"action|meeting|info|newsletter","summary":"max 10 words"}\n\nFrom:${email.from}\nSubject:${email.subject}\nBody:${email.body.slice(0,350)}`}]
+      })
     });
-    renderTasks(); renderRules(); updateBadges();
-  } catch(e) { renderRules(); }
+    const d=await r.json();
+    const obj=JSON.parse((d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim());
+    return {...email,priority:obj.priority||'normal',category:obj.category||'info',summary:obj.summary||email.snippet.slice(0,80),context:[]};
+  } catch(e){return{...email,priority:'normal',category:'info',summary:email.snippet.slice(0,80),context:[]};}
 }
 
-// ─── RENDER ────────────────────────────────────────────
-function applyFilter() {
-  const f = S.filter;
-  S.filtered = S.emails.filter(e => {
-    if (f==='all') return true;
-    if (f==='urgent') return e.priority==='urgent';
-    if (f==='high') return e.priority==='high';
-    if (f==='action') return e.category==='action';
-    if (f==='meeting') return e.category==='meeting';
-    if (f==='unread') return e.unread;
-    if (f==='tasks') return S.tasks.some(t=>t.emailId===e.id);
-    if (f==='saved') return S.saved.some(s=>s.id===e.id);
-    return true;
-  });
-  document.getElementById('inbox-count').textContent = S.filtered.length + ' emails';
-  renderEmails();
+// ═══════════════════════════ REPLY ════════════════════════════
+async function generateReply() {
+  const email=S.sel; if(!email)return;
+  const rbox=document.getElementById('rbox'),ta=document.getElementById('rta');
+  rbox.classList.remove('hidden'); ta.value='⏳ Generating...'; ta.disabled=true;
+
+  // Get thread context for better reply
+  const related = findRelated(email, S.emails, 3);
+  const ctxStr = related.length ? '\n\nRELATED CONTEXT:\n'+related.map(r=>`- ${r.subject}: ${r.summary||r.snippet.slice(0,60)}`).join('\n') : '';
+
+  try {
+    const r=await fetch(API,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':'','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:SONNET, max_tokens:700,
+        system:`You are a professional email assistant for a SaaS executive at Meritto. Write a ${S.tone} reply. Reply body only, no subject line. Use related context if relevant.`,
+        messages:[{role:'user',content:`Reply to this email.\n\nFrom: ${email.from}\nSubject: ${email.subject}\nBody: ${email.body.slice(0,1000)}${ctxStr}`}]
+      })
+    });
+    const d=await r.json();
+    ta.value=d.content?.[0]?.text||'';
+  } catch(e){ta.value='';toast('Reply generation failed','error');}
+  ta.disabled=false;
 }
 
-function renderEmails() {
-  const el = document.getElementById('email-list');
-  if (!S.filtered.length) { el.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-text">No emails in this filter</div></div>'; return; }
-  el.innerHTML = S.filtered.map(e => `<div class="email-item ${e.unread?'unread':''}" data-id="${e.id}" onclick="openEmail('${e.id}')">
-    <input type="checkbox" class="email-check" data-id="${e.id}" style="flex-shrink:0;accent-color:var(--accent);margin-top:4px" onclick="event.stopPropagation()" />
-    <div class="email-priority-dot priority-${e.priority||'normal'}"></div>
-    <div class="email-main">
-      <div class="email-row1">
-        <span class="email-sender ${e.unread?'':'read'}">${esc(e.fromName||e.from)}</span>
-        <span class="email-cat cat-${e.category||'info'}">${e.category||'info'}</span>
-        <span class="email-time">${fmtTime(e.date)}</span>
+async function sendReply() {
+  const email=S.sel,body=document.getElementById('rta').value;
+  if(!email||!body.trim())return;
+  const raw=btoa(unescape(encodeURIComponent(
+    `To: ${email.fromEmail}\r\nSubject: Re: ${email.subject}\r\nIn-Reply-To: ${email.id}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${body}`
+  ))).replace(/\+/g,'-').replace(/\//g,'_');
+  try {
+    await gapi('/messages/send',{method:'POST',body:JSON.stringify({raw,threadId:email.threadId})});
+    toast('Reply sent ✓','success');
+    document.getElementById('rbox').classList.add('hidden');
+  } catch(e){toast('Send failed: '+e.message,'error');}
+}
+
+// ═══════════════════════════ THREAD VIEW ══════════════════════
+async function openEmail(id) {
+  const email=S.emails.find(e=>e.id===id); if(!email)return;
+  S.sel=email;
+  document.querySelectorAll('.eitem').forEach(el=>el.classList.remove('selected'));
+  document.querySelector('[data-id="'+id+'"]')?.classList.add('selected');
+  document.getElementById('tpanel').classList.remove('hidden');
+  document.getElementById('rbox').classList.add('hidden');
+  document.getElementById('tsubj').textContent=email.subject;
+
+  // Meta tags
+  const meta=document.getElementById('tmeta');
+  meta.innerHTML=`
+    <span class="ttag" style="border-color:var(--${email.priority==='urgent'?'danger':email.priority==='high'?'warn':'accent'});color:var(--${email.priority==='urgent'?'danger':email.priority==='high'?'warn':'accent'})">${email.priority.toUpperCase()}</span>
+    <span class="ttag">${email.category}</span>
+    ${email.ruleApplied?`<span class="ttag">🔧 ${email.ruleApplied}</span>`:''}
+    ${(email.context||[]).some(c=>c.type==='contradiction')?`<span class="ttag" style="border-color:var(--contra);color:var(--contra)">⚠ CONTRADICTION</span>`:''}
+    ${(email.context||[]).some(c=>c.type==='complement')?`<span class="ttag" style="border-color:var(--compl);color:var(--compl)">✦ COMPLEMENT</span>`:''}
+  `;
+
+  // Context signals
+  const ctxPanel=document.getElementById('ctx-panel'),ctxItems=document.getElementById('ctx-items');
+  const signals=email.context||[];
+  if(signals.length){
+    ctxPanel.classList.remove('hidden');
+    ctxItems.innerHTML=signals.map(s=>`
+      <div class="ctx-item ${s.type}" onclick="${s.relatedEmail?`openEmail('${s.relatedEmail.id}')`:''}" title="Click to open related email">
+        <div class="ctx-icon">${s.type==='contradiction'?'⚠':s.type==='complement'?'✦':'🔗'}</div>
+        <div class="ctx-body">
+          <div class="ctx-rel" style="color:var(--${s.type==='contradiction'?'contra':s.type==='complement'?'compl':'accent2'})">${s.type.toUpperCase()}</div>
+          <div class="ctx-reason">${esc(s.reason||'')}</div>
+          <div class="ctx-from">Re: ${esc(s.relatedSubject||s.relatedEmail?.subject||'—')}</div>
+        </div>
+      </div>`).join('');
+  } else { ctxPanel.classList.add('hidden'); }
+
+  // Thread messages
+  const tbody=document.getElementById('tbody');
+  tbody.innerHTML='<div style="padding:14px;font-size:11px;color:var(--text3)">Loading thread...</div>';
+  try {
+    const thread=await gapi('/threads/'+email.threadId+'?format=full');
+    tbody.innerHTML=(thread.messages||[]).map(m=>{
+      const h={};(m.payload?.headers||[]).forEach(hh=>h[hh.name.toLowerCase()]=hh.value);
+      const parts=[];
+      function ep(p){if(!p)return;if(p.mimeType==='text/plain'&&p.body?.data){try{parts.push(atob(p.body.data.replace(/-/g,'+').replace(/_/g,'/')));}catch(e){}}if(p.parts)p.parts.forEach(ep);}
+      ep(m.payload);
+      return `<div class="tmsg">
+        <div class="mfrom">${esc(h.from||'—')}</div>
+        <div class="mtime">${new Date(parseInt(m.internalDate)).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}</div>
+        <div class="mbody">${esc((parts.join('\n')||m.snippet||'').slice(0,3000))}</div>
+      </div>`;
+    }).join('');
+  } catch(e){ tbody.innerHTML=`<div class="tmsg"><div class="mfrom">${esc(email.from)}</div><div class="mbody">${esc(email.snippet)}</div></div>`; }
+
+  if(email.unread){
+    email.unread=false;
+    document.querySelector('[data-id="'+id+'"]')?.classList.remove('unread');
+    gapi('/messages/'+id+'/modify',{method:'POST',body:JSON.stringify({removeLabelIds:['UNREAD']})}).catch(()=>{});
+    updateBadges();
+  }
+}
+
+function closeThread(){document.getElementById('tpanel').classList.add('hidden');S.sel=null;}
+function archiveThread(){
+  if(!S.sel)return;
+  gapi('/messages/'+S.sel.id+'/modify',{method:'POST',body:JSON.stringify({removeLabelIds:['INBOX']})})
+    .then(()=>{toast('Archived ✓','success');closeThread();S.emails=S.emails.filter(e=>e.id!==S.sel?.id);applyFilter();}).catch(e=>toast('Error: '+e.message,'error'));
+}
+function saveEmail(){
+  if(!S.sel||S.saved.find(e=>e.id===S.sel.id)){toast('Already saved','error');return;}
+  S.saved.push(S.sel);saveUserKey('saved_emails',S.saved);updateBadges();toast('Saved ★','success');
+}
+function archiveSel(){
+  const ch=document.querySelectorAll('.echk:checked');
+  if(!ch.length){toast('Select emails first','error');return;}
+  Promise.all([...ch].map(c=>gapi('/messages/'+c.dataset.id+'/modify',{method:'POST',body:JSON.stringify({removeLabelIds:['INBOX']})})))
+    .then(()=>{toast('Archived '+ch.length+' ✓','success');syncEmails();});
+}
+function markReadSel(){
+  const ch=document.querySelectorAll('.echk:checked');
+  if(!ch.length){toast('Select emails first','error');return;}
+  Promise.all([...ch].map(c=>gapi('/messages/'+c.dataset.id+'/modify',{method:'POST',body:JSON.stringify({removeLabelIds:['UNREAD']})})))
+    .then(()=>{toast('Marked read ✓','success');syncEmails();});
+}
+
+// ═══════════════════════════ TASKS ════════════════════════════
+function createTask(){
+  if(!S.sel)return;
+  openModal(`<div class="mtitle">+ Create Task</div>
+    <div class="fg"><label class="fl">Task Title</label><input class="fi" id="ti" value="${esc(S.sel.subject)}"/></div>
+    <div class="fg"><label class="fl">Due Date</label><input class="fi" id="td" type="date" value="${new Date(Date.now()+172800000).toISOString().slice(0,10)}"/></div>
+    <div class="fg"><label class="fl">Notes</label><input class="fi" id="tn" placeholder="Optional..."/></div>
+    <div class="mfoot"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-primary btn-sm" onclick="saveTask()">Create</button></div>`);
+}
+function openAddTask(){
+  openModal(`<div class="mtitle">+ New Task</div>
+    <div class="fg"><label class="fl">Title</label><input class="fi" id="ti" placeholder="Task description..."/></div>
+    <div class="fg"><label class="fl">Due Date</label><input class="fi" id="td" type="date" value="${new Date(Date.now()+86400000).toISOString().slice(0,10)}"/></div>
+    <div class="fg"><label class="fl">Notes</label><input class="fi" id="tn" placeholder="Optional..."/></div>
+    <div class="mfoot"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-primary btn-sm" onclick="saveTask()">Create</button></div>`);
+}
+function saveTask(){
+  const t={id:Date.now(),title:document.getElementById('ti')?.value,due:document.getElementById('td')?.value,notes:document.getElementById('tn')?.value,from:S.sel?.fromName||'',emailId:S.sel?.id,done:false};
+  if(!t.title)return;
+  S.tasks.push(t);saveUserKey('tasks',S.tasks);updateBadges();renderTasks();closeModal();toast('Task created ✓','success');
+}
+function toggleTask(id){const t=S.tasks.find(t=>t.id===id);if(t){t.done=!t.done;saveUserKey('tasks',S.tasks);renderTasks();}}
+function deleteTask(id){S.tasks=S.tasks.filter(t=>t.id!==id);saveUserKey('tasks',S.tasks);updateBadges();renderTasks();}
+function renderTasks(){
+  const el=document.getElementById('tasks-list');
+  if(!S.tasks.length){el.innerHTML='<div class="empty"><div class="ei">✓</div><div class="et">No tasks yet</div></div>';return;}
+  const sorted=[...S.tasks].sort((a,b)=>a.done-b.done||new Date(a.due)-new Date(b.due));
+  el.innerHTML=sorted.map(t=>{
+    const due=new Date(t.due),today=new Date();today.setHours(0,0,0,0);
+    const dc=!t.done?(due<today?'ov':due.getTime()===today.getTime()?'':'ok'):'';
+    return `<div class="task-item">
+      <div class="tcheck ${t.done?'done':''}" onclick="toggleTask(${t.id})">${t.done?'✓':''}</div>
+      <div class="tmain2">
+        <div class="ttitle ${t.done?'done':''}">${esc(t.title)}</div>
+        <div class="tmeta2">${t.from?`<span class="tfrom">${esc(t.from)}</span>`:''} ${t.due?`<span class="tdue ${dc}">${due.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span>`:''} ${t.notes?`<span class="tfrom">${esc(t.notes)}</span>`:''}</div>
       </div>
-      <div class="email-subject ${e.unread?'':'read'}">${esc(e.subject)}</div>
-      <div class="email-summary">${esc(e.summary||e.snippet)}</div>
-    </div>
-    <div class="email-actions">
-      <button class="icon-btn" title="Archive" onclick="event.stopPropagation();qArchive('${e.id}')">⬇</button>
-      <button class="icon-btn" title="Task" onclick="event.stopPropagation();qTask('${e.id}')">+</button>
-    </div>
+      <button class="ibtn" onclick="deleteTask(${t.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════ DIGEST ═══════════════════════════
+async function generateDigest(){
+  const el=document.getElementById('digest-content');
+  el.innerHTML='<div class="empty"><div class="spin" style="font-size:22px;opacity:.4">◌</div><div class="et">Generating...</div></div>';
+  const urgent=S.emails.filter(e=>e.priority==='urgent').slice(0,5);
+  const action=S.emails.filter(e=>e.category==='action').slice(0,5);
+  const contra=S.emails.filter(e=>(e.context||[]).some(c=>c.type==='contradiction')).slice(0,3);
+  try{
+    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':'','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:SONNET,max_tokens:900,
+        system:'Executive email assistant. Return ONLY JSON: {"summary":"2 sentences","actions":[{"item":"action","from":"name"}],"insight":"1 key insight","contradictions":[{"item":"description","from":"name"}]}',
+        messages:[{role:'user',content:`Digest:\nURGENT:\n${urgent.map(e=>`- ${e.subject} (${e.fromName}): ${e.summary}`).join('\n')}\nACTION:\n${action.map(e=>`- ${e.subject} (${e.fromName}): ${e.summary}`).join('\n')}\nCONTRADICTIONS:\n${contra.map(e=>`- ${e.subject}: ${(e.context||[]).find(c=>c.type==='contradiction')?.reason}`).join('\n')}`}]})});
+    const d=await r.json();
+    const data=JSON.parse((d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim());
+    const today=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+    el.innerHTML=`<div class="dcard">
+      <div class="ddate">📋 DIGEST — ${today.toUpperCase()}</div>
+      <div class="dstats">
+        <div class="dstat"><div class="dnum">${S.emails.length}</div><div class="dlbl">Total</div></div>
+        <div class="dstat"><div class="dnum" style="color:var(--danger)">${urgent.length}</div><div class="dlbl">Urgent</div></div>
+        <div class="dstat"><div class="dnum" style="color:var(--accent2)">${action.length}</div><div class="dlbl">Action</div></div>
+        <div class="dstat"><div class="dnum" style="color:var(--contra)">${contra.length}</div><div class="dlbl">Contra</div></div>
+      </div>
+      <div style="font-size:12px;color:var(--text);line-height:1.6;margin-bottom:14px;padding:10px;background:var(--surface2);border-radius:7px">${data.summary||''}</div>
+      ${(data.contradictions||[]).length?`<div class="stitle" style="margin-bottom:8px;color:var(--contra)">⚠ CONTRADICTIONS</div>
+      ${data.contradictions.map((c,i)=>`<div class="dai"><div class="dain">${i+1}.</div><div><div class="dait">${esc(c.item)}</div><div class="daif">${esc(c.from)}</div></div></div>`).join('')}
+      <div style="margin-bottom:12px"></div>`:''}
+      <div class="stitle" style="margin-bottom:8px">TOP ACTIONS</div>
+      ${(data.actions||[]).map((a,i)=>`<div class="dai"><div class="dain">${i+1}.</div><div><div class="dait">${esc(a.item)}</div><div class="daif">${esc(a.from)}</div></div></div>`).join('')}
+      ${data.insight?`<div style="margin-top:12px;font-size:11px;color:var(--text2);padding:9px;background:rgba(0,212,170,.05);border:1px solid rgba(0,212,170,.15);border-radius:6px">💡 ${esc(data.insight)}</div>`:''}
+    </div>`;
+  }catch(e){el.innerHTML='<div class="empty"><div class="ei">⚠</div><div class="et">Failed to generate</div></div>';}
+}
+
+// ═══════════════════════════ RULES ════════════════════════════
+function openAddRule(){
+  openModal(`<div class="mtitle">+ Auto Rule</div>
+    <div class="fg"><label class="fl">Rule Name</label><input class="fi" id="rn" placeholder="e.g. Zoho Alerts"/></div>
+    <div class="fg"><label class="fl">Match Type</label><select class="fs" id="rt"><option value="sender">Sender contains</option><option value="domain">Domain contains</option><option value="subject">Subject contains</option></select></div>
+    <div class="fg"><label class="fl">Match Value</label><input class="fi" id="rv" placeholder="e.g. noreply@zoho.com"/></div>
+    <div class="fg"><label class="fl">Action</label><select class="fs" id="ra"><option value="mark_read">Mark as read</option><option value="mark_fyi">Label as FYI</option><option value="archive">Archive</option></select></div>
+    <div class="mfoot"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-primary btn-sm" onclick="saveRule()">Create</button></div>`);
+}
+function saveRule(){
+  const r={id:Date.now(),name:document.getElementById('rn')?.value,type:document.getElementById('rt')?.value,value:document.getElementById('rv')?.value,action:document.getElementById('ra')?.value,enabled:true};
+  if(!r.name||!r.value)return;
+  S.rules.push(r);saveUserKey('rules',S.rules);renderRules();closeModal();toast('Rule created ✓','success');
+}
+function toggleRule(id){const r=S.rules.find(r=>r.id===id);if(r){r.enabled=!r.enabled;saveUserKey('rules',S.rules);renderRules();}}
+function deleteRule(id){S.rules=S.rules.filter(r=>r.id!==id);saveUserKey('rules',S.rules);renderRules();}
+function renderRules(){
+  const el=document.getElementById('rules-list');
+  const bi=[{id:-1,name:'Newsletter auto-filter',type:'sender',value:'noreply/unsubscribe',action:'mark_fyi',enabled:true,bi:true},{id:-2,name:'Auto-notifications',type:'sender',value:'notifications@/alerts@',action:'mark_read',enabled:true,bi:true}];
+  el.innerHTML=[...bi,...S.rules].map(r=>`<div class="rule-item">
+    <div class="rtoggle ${r.enabled?'on':''}" onclick="${r.bi?'':` toggleRule(${r.id})`}"></div>
+    <div class="rmain"><div class="rname">${esc(r.name)} ${r.bi?'<span style="font-size:10px;color:var(--text3)">(built-in)</span>':''}</div><div class="rdesc">${r.type} contains "${esc(r.value)}"</div><div class="raction">→ ${r.action.replace('_',' ')}</div></div>
+    ${!r.bi?`<button class="ibtn" onclick="deleteRule(${r.id})">✕</button>`:''}
   </div>`).join('');
 }
 
-function qArchive(id) {
+// ═══════════════════════════ SUPABASE ═════════════════════════
+async function sbReq(path,opts={}){
+  return fetch(SB_URL+path,{...opts,headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json',Prefer:'return=representation',...(opts.headers||{})}});
+}
+async function getCached(ids){
+  if(!ids.length)return[];
+  try{
+    // Supabase IN() max ~1000, chunk if needed
+    const results=[];
+    const chunk=500;
+    for(let i=0;i<ids.length;i+=chunk){
+      const slice=ids.slice(i,i+chunk);
+      const r=await sbReq('/rest/v1/gmail_emails?gmail_id=in.('+slice.join(',')+')', {method:'GET'});
+      if(!r.ok)continue;
+      const data=await r.json();
+      results.push(...(data||[]).map(e=>({id:e.gmail_id,threadId:e.thread_id,subject:e.subject,from:e.from_addr,fromName:e.from_name,fromEmail:e.from_email,date:e.email_date,snippet:e.snippet,unread:e.unread,priority:e.priority,category:e.category,summary:e.ai_summary,context:e.context_signals||[],labelIds:[]})));
+    }
+    return results;
+  }catch(e){return[];}
+}
+async function saveToCache(emails){
+  const rows=emails.map(e=>({gmail_id:e.id,thread_id:e.threadId,subject:e.subject,from_addr:e.from,from_name:e.fromName,from_email:e.fromEmail,email_date:e.date,snippet:e.snippet,unread:e.unread,priority:e.priority,category:e.category,ai_summary:e.summary,context_signals:e.context||[]}));
+  const chunk=100;
+  for(let i=0;i<rows.length;i+=chunk){
+    try{await sbReq('/rest/v1/gmail_emails',{method:'POST',body:JSON.stringify(rows.slice(i,i+chunk)),headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});}catch(e){}
+  }
+}
+async function saveUserKey(key,value){
+  const uid=S.user?.sub||'default';
+  try{await sbReq('/rest/v1/user_data',{method:'POST',body:JSON.stringify({user_id:uid,data_key:key,data_value:value}),headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});}catch(e){}
+}
+async function loadUserData(){
+  const uid=S.user?.sub||'default';
+  try{
+    const r=await sbReq('/rest/v1/user_data?user_id=eq.'+uid+'&select=*',{method:'GET'});
+    if(!r.ok){renderRules();return;}
+    const data=await r.json();
+    (data||[]).forEach(row=>{
+      if(row.data_key==='tasks')S.tasks=row.data_value||[];
+      if(row.data_key==='rules')S.rules=row.data_value||[];
+      if(row.data_key==='saved_emails')S.saved=row.data_value||[];
+    });
+    renderTasks();renderRules();updateBadges();
+  }catch(e){renderRules();}
+}
+
+// ═══════════════════════════ RENDER ═══════════════════════════
+function applyFilter(){
+  const f=S.filter;
+  S.filtered=S.emails.filter(e=>{
+    if(f==='all')return true;
+    if(f==='urgent')return e.priority==='urgent';
+    if(f==='action')return e.category==='action';
+    if(f==='meeting')return e.category==='meeting';
+    if(f==='unread')return e.unread;
+    if(f==='contra')return(e.context||[]).some(c=>c.type==='contradiction');
+    if(f==='compl')return(e.context||[]).some(c=>c.type==='complement');
+    if(f==='tasks')return S.tasks.some(t=>t.emailId===e.id);
+    if(f==='saved')return S.saved.some(s=>s.id===e.id);
+    return true;
+  });
+  document.getElementById('inbox-count').textContent=S.filtered.length+' emails';
+  renderEmails();
+}
+
+function renderEmails(){
+  const el=document.getElementById('elist');
+  if(!S.filtered.length){el.innerHTML='<div class="empty"><div class="ei">📭</div><div class="et">No emails</div></div>';return;}
+  el.innerHTML=S.filtered.map(e=>{
+    const contra=(e.context||[]).some(c=>c.type==='contradiction');
+    const compl=(e.context||[]).some(c=>c.type==='complement');
+    const thread=(e.context||[]).some(c=>c.type==='thread');
+    const signals=[];
+    if(contra)signals.push(`<span class="sig sig-contra">⚠ CONTRA</span>`);
+    if(compl)signals.push(`<span class="sig sig-compl">✦ COMPL</span>`);
+    if(thread&&!contra&&!compl)signals.push(`<span class="sig sig-thread">🔗 THREAD</span>`);
+    return `<div class="eitem ${e.unread?'unread':''}" data-id="${e.id}" onclick="openEmail('${e.id}')">
+      <input type="checkbox" class="echk" data-id="${e.id}" style="flex-shrink:0;accent-color:var(--accent);margin-top:3px" onclick="event.stopPropagation()"/>
+      <div class="eprio p-${e.priority||'normal'}"></div>
+      <div class="emain">
+        <div class="erow1">
+          <span class="esender ${e.unread?'':'read'}">${esc(e.fromName||e.from)}</span>
+          <span class="ecat cat-${e.category||'info'}">${e.category||'info'}</span>
+          <span class="etime">${fmtT(e.date)}</span>
+        </div>
+        <div class="esubj ${e.unread?'':'read'}">${esc(e.subject)}</div>
+        <div class="esum">${esc(e.summary||e.snippet)}</div>
+        ${signals.length?`<div class="esignals">${signals.join('')}</div>`:''}
+      </div>
+      <div class="eactions">
+        <button class="ibtn" title="Archive" onclick="event.stopPropagation();qArch('${e.id}')">⬇</button>
+        <button class="ibtn" title="Task" onclick="event.stopPropagation();S.sel=S.emails.find(e=>e.id==='${e.id}');createTask()">+</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateBadges(){
+  document.getElementById('b-all').textContent=S.emails.length;
+  const u=S.emails.filter(e=>e.priority==='urgent').length;
+  const bu=document.getElementById('b-urg');bu.textContent=u;u?bu.classList.remove('hidden'):bu.classList.add('hidden');
+  const a=S.emails.filter(e=>e.category==='action').length;
+  const ba=document.getElementById('b-act');ba.textContent=a;a?ba.classList.remove('hidden'):ba.classList.add('hidden');
+  const nr=S.emails.filter(e=>e.unread).length;
+  const bn=document.getElementById('b-unr');bn.textContent=nr;nr?bn.classList.remove('hidden'):bn.classList.add('hidden');
+  const co=S.emails.filter(e=>(e.context||[]).some(c=>c.type==='contradiction')).length;
+  const bc=document.getElementById('b-con');bc.textContent=co;co?bc.classList.remove('hidden'):bc.classList.add('hidden');
+  const cm=S.emails.filter(e=>(e.context||[]).some(c=>c.type==='complement')).length;
+  const bm=document.getElementById('b-cmp');bm.textContent=cm;cm?bm.classList.remove('hidden'):bm.classList.add('hidden');
+  document.getElementById('b-tsk').textContent=S.tasks.filter(t=>!t.done).length;
+  document.getElementById('b-sav').textContent=S.saved.length;
+}
+
+function showSkeleton(n){
+  document.getElementById('elist').innerHTML=Array(n).fill(0).map(()=>`<div class="skel-row"><div class="skel" style="width:7px;height:7px;border-radius:50%"></div><div style="flex:1"><div class="skel" style="height:10px;width:35%;margin-bottom:5px;border-radius:3px"></div><div class="skel" style="height:9px;width:60%;margin-bottom:4px;border-radius:3px"></div><div class="skel" style="height:8px;width:80%;border-radius:3px"></div></div></div>`).join('');
+}
+
+function qArch(id){
   gapi('/messages/'+id+'/modify',{method:'POST',body:JSON.stringify({removeLabelIds:['INBOX']})})
     .then(()=>{S.emails=S.emails.filter(e=>e.id!==id);applyFilter();toast('Archived ✓','success');}).catch(e=>toast('Error: '+e.message,'error'));
 }
-function qTask(id) { S.selectedEmail=S.emails.find(e=>e.id===id); createTaskFromEmail(); }
 
-function showSkeleton(n) {
-  document.getElementById('email-list').innerHTML = Array(n).fill(0).map(()=>`<div class="loading-row"><div class="skeleton" style="width:8px;height:8px;border-radius:50%"></div><div style="flex:1"><div class="skeleton" style="height:11px;width:35%;margin-bottom:6px;border-radius:3px"></div><div class="skeleton" style="height:10px;width:65%;margin-bottom:4px;border-radius:3px"></div><div class="skeleton" style="height:9px;width:85%;border-radius:3px"></div></div></div>`).join('');
-}
-
-function updateBadges() {
-  document.getElementById('badge-all').textContent = S.emails.length;
-  const u=S.emails.filter(e=>e.priority==='urgent').length;
-  const bu=document.getElementById('badge-urgent'); bu.textContent=u; u?bu.classList.remove('hidden'):bu.classList.add('hidden');
-  const a=S.emails.filter(e=>e.category==='action').length;
-  const ba=document.getElementById('badge-action'); ba.textContent=a; a?ba.classList.remove('hidden'):ba.classList.add('hidden');
-  const nr=S.emails.filter(e=>e.unread).length;
-  const bn=document.getElementById('badge-unread'); bn.textContent=nr; nr?bn.classList.remove('hidden'):bn.classList.add('hidden');
-  document.getElementById('badge-tasks').textContent = S.tasks.filter(t=>!t.done).length;
-  document.getElementById('badge-saved').textContent = S.saved.length;
-}
-
-// ─── UI HELPERS ────────────────────────────────────────
-function switchScreen(name) {
-  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = 'none'; });
-  const s = document.getElementById('screen-' + name);
-  if (s) { s.classList.add('active'); s.style.display = 'flex'; }
-  document.querySelectorAll('.topbar-nav button').forEach(b => {
-    const map = {inbox:'Inbox',tasks:'Tasks',digest:'Digest',rules:'Auto'};
-    b.classList.toggle('active', b.textContent.startsWith(map[name]||'__'));
+// ═══════════════════════════ UI HELPERS ═══════════════════════
+function switchScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='none';});
+  const s=document.getElementById('screen-'+name);
+  if(s){s.classList.add('active');s.style.display='flex';}
+  document.querySelectorAll('.tnav button').forEach(b=>{
+    const map={inbox:'Inbox',tasks:'Tasks',digest:'Digest',rules:'Rules'};
+    b.classList.toggle('active',b.textContent===map[name]);
   });
-  if (name==='tasks') renderTasks();
-  if (name==='rules') renderRules();
+  if(name==='tasks')renderTasks();
+  if(name==='rules')renderRules();
 }
-
-function showScreen(name) { switchScreen(name); }
-function setFilter(f) { S.filter=f; document.querySelectorAll('.sidebar-item').forEach(el=>el.classList.remove('active')); event?.currentTarget?.classList.add('active'); applyFilter(); }
-function setChip(el, f) { document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); S.filter=f; applyFilter(); }
-function setTone(el, t) { S.tone=t; document.querySelectorAll('.tone-chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); }
-function setReplyTab(el) { document.querySelectorAll('.reply-tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); }
-function setProgress(pct) { document.getElementById('progress-fill').style.width = pct + '%'; }
-function setStatus(msg) { document.getElementById('status-msg').textContent = msg; }
-function openModal(html) { document.getElementById('modal-content').innerHTML = html; document.getElementById('modal-overlay').classList.add('open'); }
-function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
-function closeModalOutside(e) { if (e.target===document.getElementById('modal-overlay')) closeModal(); }
-function toast(msg, type='success') {
-  const el = document.createElement('div'); el.className = 'toast ' + type;
-  el.innerHTML = `<span>${type==='success'?'✓':'⚠'}</span> ${msg}`;
-  document.getElementById('toast-container').appendChild(el);
-  setTimeout(() => el.remove(), 3000);
+function showScreen(name){switchScreen(name);}
+function setFilter(f,el){S.filter=f;document.querySelectorAll('.sitem').forEach(s=>s.classList.remove('active'));el?.classList.add('active');applyFilter();}
+function setChip(el,f){document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');S.filter=f;applyFilter();}
+function setTone(el,t){S.tone=t;document.querySelectorAll('.tone').forEach(c=>c.classList.remove('active'));el.classList.add('active');}
+function setRTab(el){document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('active'));el.classList.add('active');}
+function setProgress(p){document.getElementById('pfill').style.width=p+'%';}
+function setStat(m){document.getElementById('smsg').textContent=m;document.getElementById('sb-mid').textContent=m;}
+function setDot(cls){const d=document.getElementById('sdot');d.className='sync-dot';if(cls)d.classList.add(cls);}
+function openModal(h){document.getElementById('mcontent').innerHTML=h;document.getElementById('movl').classList.add('open');}
+function closeModal(){document.getElementById('movl').classList.remove('open');}
+function closeMOvl(e){if(e.target===document.getElementById('movl'))closeModal();}
+function toast(msg,type='success'){
+  const el=document.createElement('div');el.className='toast '+type;
+  el.innerHTML=`<span>${type==='success'?'✓':'⚠'}</span> ${msg}`;
+  document.getElementById('tc').appendChild(el);
+  setTimeout(()=>el.remove(),3000);
 }
-function fmtTime(ts) {
+function fmtT(ts){
   const d=new Date(ts),now=new Date();
-  if (d.toDateString()===now.toDateString()) return d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-  if (now-d<604800000) return d.toLocaleDateString('en-IN',{weekday:'short'});
+  if(d.toDateString()===now.toDateString())return d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  if(now-d<604800000)return d.toLocaleDateString('en-IN',{weekday:'short'});
   return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
 }
-function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-// ─── BOOT ──────────────────────────────────────────────
 boot();
 </script>
 </body>
