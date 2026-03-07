@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CX Pulse — Ticket Analyzer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0d;
+      --surface: #161616;
+      --surface2: #1e1e1e;
+      --border: #2a2a2a;
+      --border2: #333;
+      --text: #e8e8e8;
+      --text-dim: #888;
+      --text-faint: #444;
+      --accent: #00e5a0;
+      --accent-dim: rgba(0,229,160,0.1);
+      --accent-border: rgba(0,229,160,0.25);
+      --red: #ff4d4d;
+      --red-dim: rgba(255,77,77,0.1);
+      --amber: #f59e0b;
+      --amber-dim: rgba(245,158,11,0.1);
+      --blue: #60a5fa;
+      --blue-dim: rgba(96,165,250,0.1);
+      --mono: 'IBM Plex Mono', monospace;
+      --sans: 'IBM Plex Sans', sans-serif;
+    }
+
+    html { font-size: 15px; }
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── LAYOUT ── */
+    .app { display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 56px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 16px; }
+    .topbar-logo {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+    }
+    .topbar-sep { width: 1px; height: 18px; background: var(--border2); }
+    .topbar-title {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-dim);
+    }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .status-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .status-text {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    #db-status { color: var(--text-dim); }
+    #db-status.connected { color: var(--accent); }
+    #db-status.error { color: var(--red); }
+
+    /* ── MAIN AREA ── */
+    .main { display: flex; flex: 1; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 220px;
+      min-width: 220px;
+      border-right: 1px solid var(--border);
+      padding: 24px 0;
+      background: var(--surface);
+    }
+    .nav-section-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: var(--text-faint);
+      padding: 0 20px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 20px;
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.15s;
+      border-left: 2px solid transparent;
+    }
+    .nav-item:hover { color: var(--text); background: var(--surface2); }
+    .nav-item.active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: var(--accent-dim);
+    }
+    .nav-icon { font-size: 14px; width: 18px; text-align: center; }
+    .nav-divider { height: 1px; background: var(--border); margin: 16px 0; }
+    .nav-count {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--text-faint);
+      background: var(--surface2);
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    /* ── CONTENT ── */
+    .content { flex: 1; overflow-y: auto; padding: 32px; }
+
+    /* ── VIEWS ── */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .page-header-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .page-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .page-sub {
+      font-size: 13px;
+      color: var(--text-dim);
+      font-weight: 300;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 16px;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+      border: none;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-dim);
+      border: 1px solid var(--border2);
+    }
+    .btn-ghost:hover { color: var(--text); border-color: var(--text-dim); }
+    .btn-danger {
+      background: var(--red-dim);
+      color: var(--red);
+      border: 1px solid rgba(255,77,77,0.2);
+    }
+    .btn-danger:hover { background: rgba(255,77,77,0.2); }
+
+    /* ── UPLOAD ZONE ── */
+    .upload-zone {
+      border: 1.5px dashed var(--border2);
+      border-radius: 10px;
+      padding: 48px 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 24px;
+      background: var(--surface);
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--accent);
+      background: var(--accent-dim);
+    }
+    .upload-icon { font-size: 32px; margin-bottom: 12px; }
+    .upload-title {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .upload-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+    }
+    #file-input { display: none; }
+
+    /* ── TEXTAREA ── */
+    .input-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      display: block;
+    }
+    textarea {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 16px;
+      resize: vertical;
+      min-height: 180px;
+      outline: none;
+      transition: border-color 0.15s;
+      line-height: 1.6;
+    }
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--text-faint); }
+
+    /* ── ANALYZE SECTION ── */
+    .analyze-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    #analyze-status {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    /* ── PROGRESS ── */
+    .progress-bar-wrap {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 16px 0;
+      overflow: hidden;
+      display: none;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* ── RESULTS GRID ── */
+    .results-section { margin-top: 32px; display: none; }
+    .results-title {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .metric-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 20px;
+    }
+    .metric-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .metric-value {
+      font-size: 28px;
+      font-weight: 600;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .metric-sub { font-size: 11px; color: var(--text-dim); }
+    .color-accent { color: var(--accent); }
+    .color-red    { color: var(--red); }
+    .color-amber  { color: var(--amber); }
+    .color-blue   { color: var(--blue); }
+
+    /* ── TICKET TABLE ── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .table-header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .table-header-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead th {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-align: left;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 400;
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+      cursor: pointer;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+    tbody td { padding: 14px 20px; color: var(--text); vertical-align: middle; }
+    .td-id { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+    .td-subject { font-weight: 400; max-width: 260px; }
+    .td-subject-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; display: block; }
+
+    /* ── BADGES ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      font-family: var(--mono);
+    }
+    .badge-critical { background: var(--red-dim); color: var(--red); }
+    .badge-high     { background: var(--amber-dim); color: var(--amber); }
+    .badge-medium   { background: var(--blue-dim); color: var(--blue); }
+    .badge-low      { background: rgba(100,100,100,0.15); color: var(--text-dim); }
+    .badge-positive { background: var(--accent-dim); color: var(--accent); }
+    .badge-neutral  { background: rgba(100,100,100,0.15); color: var(--text-dim); }
+    .badge-negative { background: var(--red-dim); color: var(--red); }
+
+    /* ── SCORE BAR ── */
+    .score-wrap { display: flex; align-items: center; gap: 10px; }
+    .score-bar-bg {
+      flex: 1;
+      height: 4px;
+      background: var(--border2);
+      border-radius: 2px;
+      overflow: hidden;
+      max-width: 80px;
+    }
+    .score-bar-fill { height: 100%; border-radius: 2px; }
+    .score-num { font-family: var(--mono); font-size: 12px; color: var(--text-dim); min-width: 28px; }
+
+    /* ── MODAL / TICKET DETAIL ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 680px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 24px 28px 20px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+    }
+    .modal-title { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.4; }
+    .modal-id { font-family: var(--mono); font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+    .modal-close {
+      background: none; border: none;
+      color: var(--text-dim); font-size: 20px;
+      cursor: pointer; padding: 0 4px;
+      line-height: 1;
+    }
+    .modal-close:hover { color: var(--text); }
+    .modal-body { padding: 24px 28px; }
+    .modal-section { margin-bottom: 24px; }
+    .modal-section-label {
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .modal-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .modal-field {
+      background: var(--surface2);
+      border-radius: 6px;
+      padding: 12px 14px;
+    }
+    .modal-field-label { font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+    .modal-field-value { font-size: 14px; font-weight: 500; color: var(--text); }
+    .modal-analysis-text {
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--text-dim);
+      line-height: 1.7;
+      background: var(--surface2);
+      border-radius: 6px;
+      padding: 14px 16px;
+    }
+    .modal-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+
+    /* ── HISTORY VIEW ── */
+    .history-empty {
+      text-align: center;
+      padding: 64px 32px;
+      color: var(--text-dim);
+      font-size: 14px;
+    }
+    .history-empty-icon { font-size: 32px; margin-bottom: 12px; }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      padding: 12px 18px;
+      font-size: 13px;
+      color: var(--text);
+      z-index: 300;
+      transform: translateY(80px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { border-left: 3px solid var(--accent); }
+    .toast.error   { border-left: 3px solid var(--red); }
+
+    /* ── LOADING SPINNER ── */
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .metrics-row { grid-template-columns: repeat(2,1fr); }
+    }
+    @media (max-width: 600px) {
+      .content { padding: 20px; }
+      .metrics-row { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">CX_PULSE</div>
+      <div class="topbar-sep"></div>
+      <div class="topbar-title">Zoho Desk Ticket Analyzer</div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-dot"></div>
+      <div class="status-text" id="db-status">Connecting...</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="nav-section-label">Navigation</div>
+      <div class="nav-item active" onclick="switchView('analyze')">
+        <span class="nav-icon">⚡</span> Analyze
+      </div>
+      <div class="nav-item" onclick="switchView('history')">
+        <span class="nav-icon">🗃</span> History
+        <span class="nav-count" id="history-count">0</span>
+      </div>
+      <div class="nav-divider"></div>
+      <div class="nav-section-label">Info</div>
+      <div class="nav-item" onclick="switchView('about')">
+        <span class="nav-icon">ℹ</span> How it works
+      </div>
+      <div style="padding: 20px; margin-top: auto;">
+        <div style="font-family: var(--mono); font-size: 10px; color: var(--text-faint); line-height: 1.8;">
+          Meritto CS Ops<br/>
+          v1.0 · 2026
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- ── ANALYZE VIEW ── -->
+      <div class="view active" id="view-analyze">
+        <div class="page-header">
+          <div class="page-header-top">
+            <div>
+              <div class="page-title">Analyze Tickets</div>
+              <div class="page-sub">Paste JSON from Zoho Desk or upload a file — get criticality scores, sentiment & insights</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upload Zone -->
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+          <div class="upload-icon">📂</div>
+          <div class="upload-title">Drop your Zoho JSON export here</div>
+          <div class="upload-sub">Supports .json files · Single ticket or array of tickets</div>
+          <button class="btn btn-ghost" onclick="event.stopPropagation(); document.getElementById('file-input').click()">Browse File</button>
+          <input type="file" id="file-input" accept=".json" />
+        </div>
+
+        <div style="text-align:center; margin: 12px 0; font-size:12px; color:var(--text-faint);">— or paste JSON directly —</div>
+
+        <label class="input-label">Ticket JSON Input</label>
+        <textarea id="json-input" placeholder='Paste ticket JSON here...
+Example:
+[
+  {
+    "id": "TK-001",
+    "subject": "Cannot access student portal",
+    "description": "Students unable to login since morning",
+    "priority": "High",
+    "status": "Open",
+    "contactName": "Priya Sharma",
+    "createdTime": "2026-03-07T09:00:00Z"
+  }
+]'></textarea>
+
+        <div class="progress-bar-wrap" id="progress-wrap">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+
+        <div class="analyze-row">
+          <button class="btn btn-primary" id="analyze-btn" onclick="analyzeTickets()">
+            ⚡ Analyze Tickets
+          </button>
+          <button class="btn btn-ghost" onclick="clearAll()">Clear</button>
+          <span id="analyze-status"></span>
+        </div>
+
+        <!-- Results -->
+        <div class="results-section" id="results-section">
+          <div class="results-title">Analysis Results</div>
+
+          <div class="metrics-row" id="metrics-row"></div>
+
+          <div class="table-wrap">
+            <div class="table-header-row">
+              <div class="table-header-title">Ticket Breakdown</div>
+              <button class="btn btn-ghost" style="font-size:12px; padding:6px 12px;" onclick="saveToSupabase()">
+                💾 Save to Database
+              </button>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Ticket ID</th>
+                  <th>Subject</th>
+                  <th>Criticality</th>
+                  <th>Sentiment</th>
+                  <th>Score</th>
+                  <th>Priority</th>
+                </tr>
+              </thead>
+              <tbody id="results-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── HISTORY VIEW ── -->
+      <div class="view" id="view-history">
+        <div class="page-header">
+          <div class="page-header-top">
+            <div>
+              <div class="page-title">Analysis History</div>
+              <div class="page-sub">All previously analyzed and saved tickets from Supabase</div>
+            </div>
+            <button class="btn btn-ghost" onclick="loadHistory()">↻ Refresh</button>
+          </div>
+        </div>
+        <div id="history-content">
+          <div class="history-empty">
+            <div class="history-empty-icon">🗃</div>
+            <div>No saved tickets yet. Analyze and save tickets to see them here.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ABOUT VIEW ── -->
+      <div class="view" id="view-about">
+        <div class="page-header">
+          <div class="page-title">How CX Pulse Works</div>
+          <div class="page-sub">Understanding the analysis methodology</div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; max-width:720px;">
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px;">
+            <div style="font-size:20px; margin-bottom:12px;">⚡</div>
+            <div style="font-weight:600; margin-bottom:8px;">Criticality Score (0–100)</div>
+            <div style="font-size:13px; color:var(--text-dim); line-height:1.7;">Based on priority level, keywords in subject/description, status age, and escalation signals. Critical = 75+, High = 50–74, Medium = 25–49, Low = 0–24.</div>
+          </div>
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px;">
+            <div style="font-size:20px; margin-bottom:12px;">💬</div>
+            <div style="font-weight:600; margin-bottom:8px;">Sentiment Analysis</div>
+            <div style="font-size:13px; color:var(--text-dim); line-height:1.7;">Scans subject and description for negative keywords (frustrated, urgent, broken, escalate) and positive signals (thank, resolved, great) to classify sentiment.</div>
+          </div>
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px;">
+            <div style="font-size:20px; margin-bottom:12px;">🗃</div>
+            <div style="font-weight:600; margin-bottom:8px;">Supabase Storage</div>
+            <div style="font-size:13px; color:var(--text-dim); line-height:1.7;">Results saved to Supabase PostgreSQL with raw JSON preserved in JSONB column. Enables historical queries and trend analysis over time.</div>
+          </div>
+          <div style="background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px;">
+            <div style="font-size:20px; margin-bottom:12px;">📊</div>
+            <div style="font-weight:600; margin-bottom:8px;">Input Formats</div>
+            <div style="font-size:13px; color:var(--text-dim); line-height:1.7;">Accepts single ticket object or array of tickets. Compatible with Zoho Desk JSON export format. Required fields: id or ticketNumber, subject. All others optional.</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end content -->
+  </div><!-- end main -->
+</div><!-- end app -->
+
+<!-- TICKET DETAIL MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-title"></div>
+        <div class="modal-id" id="modal-id"></div>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── CONFIG ──
+  const SUPABASE_URL = 'https://bigfejxfaactgpiccezu.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpZ2ZlanhmYWFjdGdwaWNjZXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4OTY1OTAsImV4cCI6MjA4ODQ3MjU5MH0.GsrMJWIQtWN9bO4X1IPwJplxB9ebawZKxWeAiktAaf4';
+  const TABLE = 'tickets';
+
+  let analyzedTickets = [];
+
+  // ── SUPABASE HELPERS ──
+  async function sbFetch(path, options = {}) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      ...options,
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
+        ...(options.headers || {})
+      }
+    });
+    return res;
+  }
+
+  // ── DB CONNECTION CHECK ──
+  async function checkConnection() {
+    const el = document.getElementById('db-status');
+    try {
+      const res = await sbFetch(`${TABLE}?limit=1`);
+      if (res.ok || res.status === 406) {
+        el.textContent = 'Supabase Connected';
+        el.className = 'status-text connected';
+        loadHistoryCount();
+      } else {
+        throw new Error(res.status);
+      }
+    } catch(e) {
+      el.textContent = 'DB Offline';
+      el.className = 'status-text error';
+    }
+  }
+
+  async function loadHistoryCount() {
+    try {
+      const res = await sbFetch(`${TABLE}?select=id`);
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById('history-count').textContent = data.length || 0;
+      }
+    } catch(e) {}
+  }
+
+  // ── NAVIGATION ──
+  function switchView(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('view-' + name).classList.add('active');
+    event.currentTarget.classList.add('active');
+    if (name === 'history') loadHistory();
+  }
+
+  // ── FILE UPLOAD ──
+  document.getElementById('file-input').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      document.getElementById('json-input').value = ev.target.result;
+      showToast('File loaded: ' + file.name, 'success');
+    };
+    reader.readAsText(file);
+  });
+
+  // Drag and drop
+  const zone = document.getElementById('upload-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith('.json')) {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        document.getElementById('json-input').value = ev.target.result;
+        showToast('File loaded: ' + file.name, 'success');
+      };
+      reader.readAsText(file);
+    }
+  });
+
+  // ── ANALYSIS ENGINE ──
+  function analyzeTicket(ticket) {
+    const text = ((ticket.subject || '') + ' ' + (ticket.description || '') + ' ' + (ticket.cf || '')).toLowerCase();
+
+    // Criticality scoring
+    const priorityMap = { 'critical': 85, 'urgent': 80, 'high': 60, 'medium': 35, 'low': 15, 'normal': 30 };
+    let score = priorityMap[(ticket.priority || '').toLowerCase()] || 30;
+
+    const criticalKeywords = ['cannot access', 'not working', 'broken', 'down', 'urgent', 'escalate', 'data loss', 'payment', 'bug', 'error', 'fail', 'crash', 'blocked', 'emergency'];
+    const highKeywords = ['slow', 'issue', 'problem', 'wrong', 'incorrect', 'missing', 'not loading', 'unable'];
+    const boostMap = criticalKeywords.reduce((a,k) => (text.includes(k) ? a + 12 : a), 0)
+                   + highKeywords.reduce((a,k) => (text.includes(k) ? a + 6 : a), 0);
+    score = Math.min(100, score + Math.min(boostMap, 30));
+
+    // Status modifier
+    if ((ticket.status || '').toLowerCase() === 'open') score = Math.min(100, score + 8);
+    if ((ticket.status || '').toLowerCase() === 'overdue') score = Math.min(100, score + 15);
+
+    // Criticality label
+    let criticality, critClass;
+    if (score >= 75)      { criticality = 'Critical'; critClass = 'badge-critical'; }
+    else if (score >= 50) { criticality = 'High';     critClass = 'badge-high'; }
+    else if (score >= 25) { criticality = 'Medium';   critClass = 'badge-medium'; }
+    else                  { criticality = 'Low';       critClass = 'badge-low'; }
+
+    // Sentiment
+    const negWords = ['frustrated', 'angry', 'terrible', 'worst', 'broken', 'urgent', 'escalate', 'unacceptable', 'disappointed', 'useless', 'fail', 'wrong', 'bad', 'hate', 'cannot', 'unable'];
+    const posWords = ['thank', 'great', 'excellent', 'resolved', 'perfect', 'helpful', 'good', 'appreciate', 'works', 'fixed'];
+    const negCount = negWords.filter(w => text.includes(w)).length;
+    const posCount = posWords.filter(w => text.includes(w)).length;
+
+    let sentiment, sentClass;
+    if (negCount > posCount && negCount >= 1)      { sentiment = 'Negative'; sentClass = 'badge-negative'; }
+    else if (posCount > negCount && posCount >= 1) { sentiment = 'Positive'; sentClass = 'badge-positive'; }
+    else                                           { sentiment = 'Neutral';  sentClass = 'badge-neutral'; }
+
+    // Empathy flag
+    const empathyFlag = negCount >= 2 ? '⚠ Needs empathy' : '';
+
+    // Summary
+    const summary = `Ticket scored ${score}/100 criticality. Sentiment detected as ${sentiment.toLowerCase()} based on keyword analysis. ${empathyFlag}${ticket.status ? ' Current status: ' + ticket.status + '.' : ''}`;
+
+    return {
+      ticket_id: ticket.id || ticket.ticketNumber || ticket.ticketId || ('TK-' + Math.random().toString(36).substr(2,6).toUpperCase()),
+      subject: ticket.subject || 'No subject',
+      status: ticket.status || 'Unknown',
+      priority: ticket.priority || 'Normal',
+      customer_name: ticket.contactName || ticket.contact?.name || ticket.requester || 'Unknown',
+      created_at: ticket.createdTime || ticket.created_at || new Date().toISOString(),
+      resolved_at: ticket.resolvedTime || ticket.resolved_at || null,
+      raw_data: ticket,
+      ai_score: score,
+      sentiment: sentiment,
+      criticality: criticality,
+      critClass: critClass,
+      sentClass: sentClass,
+      empathy_flag: empathyFlag,
+      summary: summary,
+      analyzed_at: new Date().toISOString()
+    };
+  }
+
+  async function analyzeTickets() {
+    const raw = document.getElementById('json-input').value.trim();
+    if (!raw) { showToast('Please paste or upload ticket JSON first', 'error'); return; }
+
+    let tickets;
+    try {
+      const parsed = JSON.parse(raw);
+      tickets = Array.isArray(parsed) ? parsed : [parsed];
+    } catch(e) {
+      showToast('Invalid JSON — check format and try again', 'error');
+      return;
+    }
+
+    if (tickets.length === 0) { showToast('No tickets found in JSON', 'error'); return; }
+
+    // Progress
+    const btn = document.getElementById('analyze-btn');
+    const statusEl = document.getElementById('analyze-status');
+    const progressWrap = document.getElementById('progress-wrap');
+    const progressFill = document.getElementById('progress-fill');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Analyzing...';
+    progressWrap.style.display = 'block';
+    statusEl.innerHTML = '';
+
+    analyzedTickets = [];
+    for (let i = 0; i < tickets.length; i++) {
+      await new Promise(r => setTimeout(r, 40));
+      analyzedTickets.push(analyzeTicket(tickets[i]));
+      const pct = Math.round(((i+1)/tickets.length)*100);
+      progressFill.style.width = pct + '%';
+      statusEl.textContent = `Analyzing ${i+1} of ${tickets.length}...`;
+    }
+
+    progressWrap.style.display = 'none';
+    btn.disabled = false;
+    btn.innerHTML = '⚡ Analyze Tickets';
+    statusEl.textContent = '';
+
+    renderResults(analyzedTickets);
+    showToast(`✓ ${tickets.length} ticket${tickets.length>1?'s':''} analyzed`, 'success');
+  }
+
+  function renderResults(tickets) {
+    const section = document.getElementById('results-section');
+    section.style.display = 'block';
+
+    // Metrics
+    const critical = tickets.filter(t => t.criticality === 'Critical').length;
+    const high     = tickets.filter(t => t.criticality === 'High').length;
+    const negative = tickets.filter(t => t.sentiment === 'Negative').length;
+    const avgScore = Math.round(tickets.reduce((a,t) => a + t.ai_score, 0) / tickets.length);
+
+    document.getElementById('metrics-row').innerHTML = `
+      <div class="metric-card">
+        <div class="metric-label">Total Tickets</div>
+        <div class="metric-value color-accent">${tickets.length}</div>
+        <div class="metric-sub">in this batch</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Critical</div>
+        <div class="metric-value color-red">${critical}</div>
+        <div class="metric-sub">${high} high priority</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Negative Sentiment</div>
+        <div class="metric-value color-amber">${negative}</div>
+        <div class="metric-sub">need attention</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Avg Score</div>
+        <div class="metric-value color-blue">${avgScore}</div>
+        <div class="metric-sub">criticality /100</div>
+      </div>
+    `;
+
+    // Table
+    const tbody = document.getElementById('results-tbody');
+    tbody.innerHTML = tickets.map((t, i) => {
+      const scoreColor = t.ai_score >= 75 ? '#ff4d4d' : t.ai_score >= 50 ? '#f59e0b' : t.ai_score >= 25 ? '#60a5fa' : '#888';
+      return `
+        <tr onclick="openModal(${i})">
+          <td class="td-id">${t.ticket_id}</td>
+          <td class="td-subject"><span class="td-subject-text">${escHtml(t.subject)}</span></td>
+          <td><span class="badge ${t.critClass}">${t.criticality}</span></td>
+          <td><span class="badge ${t.sentClass}">${t.sentiment}</span></td>
+          <td>
+            <div class="score-wrap">
+              <div class="score-bar-bg"><div class="score-bar-fill" style="width:${t.ai_score}%;background:${scoreColor}"></div></div>
+              <span class="score-num">${t.ai_score}</span>
+            </div>
+          </td>
+          <td><span style="font-size:12px;color:var(--text-dim)">${t.priority}</span></td>
+        </tr>`;
+    }).join('');
+  }
+
+  // ── MODAL ──
+  function openModal(idx) {
+    const t = analyzedTickets[idx];
+    document.getElementById('modal-title').textContent = t.subject;
+    document.getElementById('modal-id').textContent = t.ticket_id + ' · ' + t.customer_name;
+    document.getElementById('modal-body').innerHTML = `
+      <div class="modal-section">
+        <div class="modal-section-label">Analysis</div>
+        <div class="modal-grid-2">
+          <div class="modal-field">
+            <div class="modal-field-label">Criticality Score</div>
+            <div class="modal-field-value" style="color:${t.ai_score>=75?'var(--red)':t.ai_score>=50?'var(--amber)':'var(--blue)'}">${t.ai_score} / 100</div>
+          </div>
+          <div class="modal-field">
+            <div class="modal-field-label">Sentiment</div>
+            <div class="modal-field-value">${t.sentiment} ${t.empathy_flag ? '⚠' : ''}</div>
+          </div>
+          <div class="modal-field">
+            <div class="modal-field-label">Status</div>
+            <div class="modal-field-value">${t.status}</div>
+          </div>
+          <div class="modal-field">
+            <div class="modal-field-label">Priority</div>
+            <div class="modal-field-value">${t.priority}</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-label">AI Summary</div>
+        <div class="modal-analysis-text">${t.summary}</div>
+      </div>
+      <div class="modal-section">
+        <div class="modal-section-label">Ticket Info</div>
+        <div class="modal-grid-2">
+          <div class="modal-field">
+            <div class="modal-field-label">Customer</div>
+            <div class="modal-field-value">${t.customer_name}</div>
+          </div>
+          <div class="modal-field">
+            <div class="modal-field-label">Created</div>
+            <div class="modal-field-value">${t.created_at ? new Date(t.created_at).toLocaleDateString('en-IN') : '—'}</div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function closeModal(e) {
+    if (e.target === document.getElementById('modal-overlay')) {
+      document.getElementById('modal-overlay').classList.remove('open');
+    }
+  }
+
+  // ── SAVE TO SUPABASE ──
+  async function saveToSupabase() {
+    if (!analyzedTickets.length) { showToast('No analyzed tickets to save', 'error'); return; }
+
+    showToast('Saving to Supabase...', '');
+    try {
+      const payload = analyzedTickets.map(t => ({
+        ticket_id:     t.ticket_id,
+        subject:       t.subject,
+        status:        t.status,
+        priority:      t.priority,
+        customer_name: t.customer_name,
+        created_at:    t.created_at,
+        resolved_at:   t.resolved_at,
+        raw_data:      t.raw_data,
+        ai_score:      t.ai_score,
+        sentiment:     t.sentiment,
+        analyzed_at:   t.analyzed_at
+      }));
+
+      const res = await sbFetch(TABLE, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'Prefer': 'resolution=merge-duplicates' }
+      });
+
+      if (res.ok || res.status === 201) {
+        showToast(`✓ ${analyzedTickets.length} tickets saved to Supabase`, 'success');
+        loadHistoryCount();
+      } else {
+        const err = await res.json();
+        throw new Error(err.message || res.status);
+      }
+    } catch(e) {
+      showToast('Save failed: ' + e.message, 'error');
+    }
+  }
+
+  // ── LOAD HISTORY ──
+  async function loadHistory() {
+    const container = document.getElementById('history-content');
+    container.innerHTML = '<div class="history-empty"><div class="spinner" style="width:20px;height:20px;margin:0 auto 12px"></div><div>Loading...</div></div>';
+    try {
+      const res = await sbFetch(`${TABLE}?order=analyzed_at.desc&limit=100`);
+      if (!res.ok) throw new Error(res.status);
+      const data = await res.json();
+
+      if (!data.length) {
+        container.innerHTML = '<div class="history-empty"><div class="history-empty-icon">🗃</div><div>No saved tickets yet.</div></div>';
+        return;
+      }
+
+      document.getElementById('history-count').textContent = data.length;
+      container.innerHTML = `
+        <div class="table-wrap">
+          <div class="table-header-row">
+            <div class="table-header-title">Saved Tickets (${data.length})</div>
+          </div>
+          <table>
+            <thead><tr>
+              <th>Ticket ID</th><th>Subject</th><th>Customer</th>
+              <th>Score</th><th>Sentiment</th><th>Analyzed</th>
+            </tr></thead>
+            <tbody>
+              ${data.map(t => {
+                const score = t.ai_score || 0;
+                const scoreColor = score>=75?'var(--red)':score>=50?'var(--amber)':'var(--blue)';
+                const sentClass = t.sentiment==='Negative'?'badge-negative':t.sentiment==='Positive'?'badge-positive':'badge-neutral';
+                return `<tr>
+                  <td class="td-id">${escHtml(t.ticket_id||'—')}</td>
+                  <td class="td-subject"><span class="td-subject-text">${escHtml(t.subject||'—')}</span></td>
+                  <td style="font-size:13px;color:var(--text-dim)">${escHtml(t.customer_name||'—')}</td>
+                  <td><span style="font-family:var(--mono);font-size:13px;color:${scoreColor};font-weight:600">${score}</span></td>
+                  <td><span class="badge ${sentClass}">${t.sentiment||'—'}</span></td>
+                  <td style="font-family:var(--mono);font-size:11px;color:var(--text-dim)">${t.analyzed_at ? new Date(t.analyzed_at).toLocaleDateString('en-IN') : '—'}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    } catch(e) {
+      container.innerHTML = `<div class="history-empty"><div class="history-empty-icon">⚠</div><div>Could not load history: ${e.message}</div></div>`;
+    }
+  }
+
+  // ── UTILS ──
+  function clearAll() {
+    document.getElementById('json-input').value = '';
+    document.getElementById('results-section').style.display = 'none';
+    analyzedTickets = [];
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  let toastTimer;
+  function showToast(msg, type) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast ' + type;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+  }
+
+  // ── INIT ──
+  checkConnection();
+</script>
+</body>
+</html>
