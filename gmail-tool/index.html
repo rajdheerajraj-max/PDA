@@ -445,12 +445,16 @@ const S = {
 
 // ─── GOOGLE AUTH ───────────────────────────────────────
 function signIn() {
+  // Use exact origin only — no path, no trailing slash
+  const origin = location.origin;
+  const redirectUri = origin + location.pathname.replace(/\/?$/, '/');
   const p = new URLSearchParams({
     client_id: CLIENT_ID,
-    redirect_uri: location.href.split('?')[0].split('#')[0],
+    redirect_uri: redirectUri,
     response_type: 'token',
     scope: SCOPES,
-    prompt: 'select_account'
+    prompt: 'select_account',
+    include_granted_scopes: 'true'
   });
   location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + p;
 }
