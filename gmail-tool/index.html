@@ -546,92 +546,122 @@ async function gapi(path, opts={}, retries=3) {
   return r.json();
 }
 
-// Full sync — fetch ALL emails paginated, process only new ones
+// Full sync — METADATA FIRST, show list fast, classify in background
 async function fullSync() {
   if (S.syncing) return;
   S.syncing = true;
-  setDot('pulse'); setStat('Syncing last 1 year of emails...');
-  setProgress(2);
+  setDot('pulse'); setStat('Fetching email list...');
+  setProgress(5);
   showSkeleton(10);
 
   try {
-    // 1. Get all message IDs from Gmail (paginated)
+    // STEP 1: IDs only — very fast
     setStat('Fetching email IDs (last 1 year)...');
     const allIds = await fetchAllIds();
     S.totalFetched = allIds.length;
-    setStat(`Found ${allIds.length} emails. Checking cache...`);
     setProgress(15);
 
-    // 2. Get cached emails from Supabase
+    // STEP 2: Check Supabase cache
+    setStat('Checking cache...');
     const cached = await getCached(allIds);
     const cachedMap = {};
     cached.forEach(e => cachedMap[e.id] = e);
     const uncachedIds = allIds.filter(id => !cachedMap[id]);
+    setProgress(25);
+    setStat(`Cache: ${cached.length} hit · ${uncachedIds.length} to load...`);
 
-    setStat(cached.length > 0 
-      ? `Cache: ${cached.length} hit. Fetching ${uncachedIds.length} new...`
-      : `No cache — fetching all ${uncachedIds.length} emails from Gmail...`);
-    setProgress(20);
-
-    // 3. Fetch uncached in batches of 10 (avoid 429 rate limit)
-    const newRaw = [];
-    const fbatch = 10;
-    for (let i=0; i<uncachedIds.length; i+=fbatch) {
-      const slice = uncachedIds.slice(i, i+fbatch);
-      const fetched = await Promise.all(slice.map(id => gapi('/messages/'+id+'?format=full')));
-      newRaw.push(...fetched);
-      const pct = 20 + Math.round((i/uncachedIds.length)*30);
-      setProgress(pct);
-      setStat(`Fetched ${newRaw.length}/${uncachedIds.length} new emails...`);
-      // Small pause between batches to respect rate limits
-      if (i+fbatch < uncachedIds.length) await new Promise(res=>setTimeout(res,300));
+    // STEP 3: Fetch METADATA sequentially — concurrency=3, avoids ERR_NETWORK_IO_SUSPENDED
+    const metaRaw = [];
+    const CONCURRENCY = 3;
+    async function fetchWithConcurrency(ids, concurrency) {
+      const results = new Array(ids.length);
+      let idx = 0;
+      async function worker() {
+        while (idx < ids.length) {
+          const i = idx++;
+          try {
+            results[i] = await gapi('/messages/'+ids[i]+'?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=To&metadataHeaders=Date');
+          } catch(e) {
+            results[i] = null; // skip failed
+          }
+          setProgress(25 + Math.round((metaRaw.filter(Boolean).length/Math.max(uncachedIds.length,1))*45));
+          setStat(`Loading ${i+1}/${uncachedIds.length} emails...`);
+        }
+      }
+      await Promise.all(Array.from({length:concurrency}, worker));
+      return results.filter(Boolean);
     }
+    const fetched = await fetchWithConcurrency(uncachedIds, CONCURRENCY);
+    metaRaw.push(...fetched);
+    setProgress(70);
 
-    setProgress(50);
-    const parsed = newRaw.map(parseEmail);
+    // STEP 4: Parse + auto-classify newsletters client-side
+    const metaParsed = metaRaw.map(parseMeta);
+    const autoEmails = metaParsed.filter(isAutoEmail).map(e=>({...e,priority:'fyi',category:'newsletter',summary:'Newsletter / notification',context:[]}));
+    const toClassify = metaParsed.filter(e=>!isAutoEmail(e)).map(e=>({...e,priority:'normal',category:'info',summary:e.snippet,context:[]}));
+    const allNew = [...toClassify,...autoEmails].map(applyRules);
 
-    // 4. Client-side auto-filter (no AI call)
-    const autoEmails = parsed.filter(isAutoEmail).map(e=>({...e,priority:'fyi',category:'newsletter',summary:'Auto-classified: newsletter/notification',context:[]}));
-    const toAI = parsed.filter(e=>!isAutoEmail(e));
-
-    // 5. AI classify in batches
-    setStat(`AI classifying ${toAI.length} emails...`);
-    const classified = [];
-    for (let i=0; i<toAI.length; i+=BATCH) {
-      const batch = toAI.slice(i,i+BATCH);
-      const results = await Promise.all(batch.map(classifyEmail));
-      classified.push(...results);
-      const pct = 50 + Math.round((i/toAI.length)*25);
-      setProgress(pct); setStat(`Classified ${classified.length}/${toAI.length}...`);
-    }
-
-    // 6. Apply rules
-    const allProcessed = [...classified,...autoEmails].map(applyRules);
-
-    // 7. Merge with cached
-    S.emails = [...allProcessed,...cached].sort((a,b)=>b.date-a.date);
-    setProgress(75);
-
-    // 8. Context analysis — find contradictions/complements
-    setStat('Running context analysis...');
-    await runContextAnalysis(allProcessed);
-    setProgress(90);
-
-    // 9. Save to Supabase
-    if (allProcessed.length) saveToCache(allProcessed);
-
-    // 10. Done
+    // STEP 5: SHOW IMMEDIATELY — merge with cache and render
+    S.emails = [...allNew,...cached].sort((a,b)=>b.date-a.date);
     S.lastSync = new Date();
-    S.emails = S.emails.sort((a,b)=>b.date-a.date);
     applyFilter(); updateBadges();
-    setProgress(100);
-    setDot('green'); setStat(`Synced — ${S.emails.length} emails`);
-    document.getElementById('slast').textContent = 'Last sync: ' + S.lastSync.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('scounts').textContent = `1yr scope · ${S.emails.length} total · ${cached.length} cached · ${allProcessed.length} new`;
-    setTimeout(()=>setProgress(0),600);
+    setProgress(85); setDot('green');
+    setStat(`${S.emails.length} emails loaded · classifying in background...`);
+    document.getElementById('scounts').textContent = `1yr · ${S.emails.length} total · ${cached.length} cached · ${allNew.length} new`;
+    document.getElementById('slast').textContent = 'Synced: '+S.lastSync.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    setTimeout(()=>setProgress(0),400);
+    S.syncing = false; // release lock — UI fully responsive now
 
-  } catch(e) { toast('Sync error: '+e.message,'error'); setStat('Sync failed'); setDot(''); }
-  S.syncing = false;
+    // STEP 6: Background AI classify — tiny batches, non-blocking
+    if (toClassify.length) classifyInBackground(toClassify);
+
+  } catch(e) {
+    console.error('fullSync:', e);
+    toast('Sync error: '+e.message,'error');
+    setStat('Sync failed — click ⟳ to retry');
+    setDot(''); S.syncing = false;
+  }
+}
+
+// Lightweight metadata parser — body loaded on-demand when email opened
+function parseMeta(msg) {
+  const h={};
+  (msg.payload?.headers||[]).forEach(hh=>h[hh.name.toLowerCase()]=hh.value);
+  const fromRaw=h.from||'';
+  return {
+    id:msg.id, threadId:msg.threadId,
+    subject:h.subject||'(no subject)',
+    from:fromRaw,
+    fromName:fromRaw.replace(/<.*>/,'').replace(/"/g,'').trim()||fromRaw,
+    fromEmail:fromRaw.match(/<(.+)>/)?.[1]||fromRaw,
+    to:h.to||'', date:parseInt(msg.internalDate||'0'),
+    snippet:msg.snippet||'', body:'',
+    labelIds:msg.labelIds||[],
+    unread:(msg.labelIds||[]).includes('UNREAD'),
+    priority:'normal', category:'info', summary:msg.snippet||'', context:[]
+  };
+}
+
+// Background classify — runs after UI shown, 5 at a time, 500ms pause
+async function classifyInBackground(emails) {
+  const bgBatch = 5;
+  let done = 0;
+  for (let i=0; i<emails.length; i+=bgBatch) {
+    if (isTokenExpired()) { setStat('Session expired — re-login to continue'); return; }
+    const batch = emails.slice(i, i+bgBatch);
+    const results = await Promise.all(batch.map(classifyEmail));
+    results.forEach(r => {
+      const idx = S.emails.findIndex(e=>e.id===r.id);
+      if (idx>-1) S.emails[idx] = {...S.emails[idx], priority:r.priority, category:r.category, summary:r.summary};
+    });
+    done += results.length;
+    if (done % 25 === 0) { applyFilter(); updateBadges(); }
+    setStat(`Classifying: ${done}/${emails.length}`);
+    await new Promise(res=>setTimeout(res,500));
+  }
+  applyFilter(); updateBadges();
+  setStat(`${S.emails.length} emails ready`);
+  saveToCache(S.emails.filter(e=>e.category!=='info'||e.priority!=='normal'));
 }
 
 // Delta sync — new emails + 7-day re-check for Gmail-side changes
@@ -675,8 +705,13 @@ async function syncEmails() {
       const existingIds = new Set(S.emails.map(e=>e.id));
       const truly_new = newMsgs.filter(m=>!existingIds.has(m.id));
       if (truly_new.length) {
-        const fetched = await Promise.all(truly_new.map(m=>gapi('/messages/'+m.id+'?format=full')));
-        const parsed = fetched.map(parseEmail);
+        // Sequential concurrency=3 to avoid ERR_NETWORK_IO_SUSPENDED
+        const fetchedArr = [];
+        let si=0;
+        async function sw(){while(si<truly_new.length){const i=si++;try{fetchedArr[i]=await gapi('/messages/'+truly_new[i].id+'?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=To&metadataHeaders=Date');}catch(e){fetchedArr[i]=null;}}}
+        await Promise.all([sw(),sw(),sw()]);
+        const fetched = fetchedArr.filter(Boolean);
+        const parsed = fetched.map(parseMeta);
         const toAI = parsed.filter(e=>!isAutoEmail(e));
         const auto = parsed.filter(isAutoEmail).map(e=>({...e,priority:'fyi',category:'newsletter',summary:'Auto-classified',context:[]}));
         const classified = await Promise.all(toAI.map(classifyEmail));
@@ -692,15 +727,11 @@ async function syncEmails() {
     // Re-check read status for last 7d emails still in INBOX
     // Fetch lightweight metadata in small batches to avoid 429
     setStat('Syncing read status...');
-    const metaBatch = [...recheck7Ids].slice(0, 100);
-    const metaFetched = [];
-    const mBsz = 10;
-    for (let i=0; i<metaBatch.length; i+=mBsz) {
-      const slice = metaBatch.slice(i, i+mBsz);
-      const results = await Promise.all(slice.map(id => gapi('/messages/'+id+'?format=minimal').catch(()=>null)));
-      metaFetched.push(...results);
-      if (i+mBsz < metaBatch.length) await new Promise(res=>setTimeout(res,200));
-    }
+    const metaBatch = [...recheck7Ids].slice(0, 60); // cap at 60 for read-status check
+    const metaFetched = new Array(metaBatch.length);
+    let msi=0;
+    async function mw(){while(msi<metaBatch.length){const i=msi++;try{metaFetched[i]=await gapi('/messages/'+metaBatch[i]+'?format=minimal');}catch(e){metaFetched[i]=null;}}}
+    await Promise.all([mw(),mw(),mw()]);
     let readChanged = 0;
     metaFetched.forEach(m => {
       if (!m) return;
@@ -885,6 +916,8 @@ Only include signals you are confident about. Empty array [] if no clear signals
 
 // ═══════════════════════════ CLASSIFY ═════════════════════════
 async function classifyEmail(email) {
+  // Use body if available, else snippet (metadata-only emails)
+  const content = email.body ? email.body.slice(0,350) : email.snippet.slice(0,200);
   try {
     const r = await fetch(API,{
       method:'POST',
@@ -892,7 +925,7 @@ async function classifyEmail(email) {
       body:JSON.stringify({
         model:HAIKU, max_tokens:150,
         system:'Email classifier. Return ONLY valid JSON.',
-        messages:[{role:'user',content:`{"priority":"urgent|high|normal|fyi","category":"action|meeting|info|newsletter","summary":"max 10 words"}\n\nFrom:${email.from}\nSubject:${email.subject}\nBody:${email.body.slice(0,350)}`}]
+        messages:[{role:'user',content:`{"priority":"urgent|high|normal|fyi","category":"action|meeting|info|newsletter","summary":"max 10 words"}\n\nFrom:${email.from}\nSubject:${email.subject}\nSnippet:${content}`}]
       })
     });
     const d=await r.json();
