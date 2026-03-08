@@ -505,11 +505,42 @@ async function initApp() {
 }
 
 // ═══════════════════════════ GMAIL ════════════════════════════
-async function gapi(path, opts={}) {
+// Check token expiry before any API call
+function isTokenExpired() {
+  try {
+    const d = JSON.parse(localStorage.getItem('gt')||'null');
+    return !d || d.exp <= Date.now() + 60000; // 60s buffer
+  } catch(e) { return true; }
+}
+
+function showReloginPrompt() {
+  // Don't auto-signout — just show re-login banner
+  document.getElementById('sb-mid').textContent = '⚠ Session expired — click to re-login';
+  document.getElementById('sb-mid').style.color = 'var(--danger)';
+  document.getElementById('sb-mid').style.cursor = 'pointer';
+  document.getElementById('sb-mid').onclick = () => signIn();
+  setDot('');
+}
+
+async function gapi(path, opts={}, retries=3) {
+  // Check expiry before calling
+  if (isTokenExpired()) { showReloginPrompt(); throw new Error('Token expired'); }
+
   const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me'+path, {
     ...opts, headers:{Authorization:'Bearer '+S.token,'Content-Type':'application/json',...(opts.headers||{})}
   });
-  if (r.status===401) { signOut(); throw new Error('Session expired'); }
+
+  // 401 — token rejected by Google
+  if (r.status===401) { showReloginPrompt(); throw new Error('Session expired'); }
+
+  // 429 — rate limit: wait and retry with exponential backoff
+  if (r.status===429 && retries>0) {
+    const wait = (4-retries) * 2000; // 2s, 4s, 6s
+    setStat(`Rate limited — retrying in ${wait/1000}s...`);
+    await new Promise(res=>setTimeout(res,wait));
+    return gapi(path, opts, retries-1);
+  }
+
   if (!r.ok) { const e=await r.json().catch(()=>({})); throw new Error(e.error?.message||r.status); }
   if (r.status===204) return {};
   return r.json();
@@ -540,9 +571,9 @@ async function fullSync() {
     setStat(`Cache: ${cached.length} hit. Fetching ${uncachedIds.length} new...`);
     setProgress(20);
 
-    // 3. Fetch uncached in batches of 50
+    // 3. Fetch uncached in batches of 10 (avoid 429 rate limit)
     const newRaw = [];
-    const fbatch = 50;
+    const fbatch = 10;
     for (let i=0; i<uncachedIds.length; i+=fbatch) {
       const slice = uncachedIds.slice(i, i+fbatch);
       const fetched = await Promise.all(slice.map(id => gapi('/messages/'+id+'?format=full')));
@@ -550,6 +581,8 @@ async function fullSync() {
       const pct = 20 + Math.round((i/uncachedIds.length)*30);
       setProgress(pct);
       setStat(`Fetched ${newRaw.length}/${uncachedIds.length} new emails...`);
+      // Small pause between batches to respect rate limits
+      if (i+fbatch < uncachedIds.length) await new Promise(res=>setTimeout(res,300));
     }
 
     setProgress(50);
@@ -655,12 +688,17 @@ async function syncEmails() {
     setProgress(80);
 
     // Re-check read status for last 7d emails still in INBOX
-    // Fetch lightweight metadata (no body) for 7d emails to sync read/unread
+    // Fetch lightweight metadata in small batches to avoid 429
     setStat('Syncing read status...');
-    const metaBatch = [...recheck7Ids].slice(0, 100); // cap at 100
-    const metaFetched = await Promise.all(
-      metaBatch.map(id => gapi('/messages/'+id+'?format=minimal').catch(()=>null))
-    );
+    const metaBatch = [...recheck7Ids].slice(0, 100);
+    const metaFetched = [];
+    const mBsz = 10;
+    for (let i=0; i<metaBatch.length; i+=mBsz) {
+      const slice = metaBatch.slice(i, i+mBsz);
+      const results = await Promise.all(slice.map(id => gapi('/messages/'+id+'?format=minimal').catch(()=>null)));
+      metaFetched.push(...results);
+      if (i+mBsz < metaBatch.length) await new Promise(res=>setTimeout(res,200));
+    }
     let readChanged = 0;
     metaFetched.forEach(m => {
       if (!m) return;
