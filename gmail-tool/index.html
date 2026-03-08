@@ -436,14 +436,17 @@ option{background:var(--surface2);}
 
 <script>
 // ═══════════════════════════ CONFIG ═══════════════════════════
-const CLIENT_ID = '249250925827-0tt0t6letpbmomkgdq6jm7pto7tpg2iq.apps.googleusercontent.com';
-const SCOPES = 'https://www.googleapis.com/auth/gmail.modify';
-const SB_URL = 'https://bigfejxfaactgpiccezu.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpZ2ZlanhmYWFjdGdwaWNjZXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4OTY1OTAsImV4cCI6MjA4ODQ3MjU5MH0.GsrMJWIQtWN9bO4X1IPwJplxB9ebawZKxWeAiktAaf4';
-const API = 'https://api.anthropic.com/v1/messages';
-const HAIKU = 'claude-haiku-4-5-20251001';
-const SONNET = 'claude-sonnet-4-20250514';
-const BATCH = 20; // classify batch size
+const CLIENT_ID  = '249250925827-0tt0t6letpbmomkgdq6jm7pto7tpg2iq.apps.googleusercontent.com';
+const SCOPES     = 'https://www.googleapis.com/auth/gmail.modify';
+const SB_URL     = 'https://bigfejxfaactgpiccezu.supabase.co';
+const SB_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpZ2ZlanhmYWFjdGdwaWNjZXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4OTY1OTAsImV4cCI6MjA4ODQ3MjU5MH0.GsrMJWIQtWN9bO4X1IPwJplxB9ebawZKxWeAiktAaf4';
+const SB_FUNC    = 'https://bigfejxfaactgpiccezu.supabase.co/functions/v1';
+const OAUTH_CB   = 'https://bigfejxfaactgpiccezu.supabase.co/functions/v1/oauth-callback';
+const API        = 'https://api.anthropic.com/v1/messages';
+const HAIKU      = 'claude-haiku-4-5-20251001';
+const SONNET     = 'claude-sonnet-4-20250514';
+const BATCH      = 20;
+const POLL_MS    = 30000; // 30s poll interval for background sync progress
 
 // ═══════════════════════════ STATE ════════════════════════════
 const S = {
@@ -455,53 +458,291 @@ const S = {
   tone:'formal',
   syncing:false,
   totalFetched:0,
-  lastSync:null
+  lastSync:null,
+  windowsDone:0,
+  windowsTotal:0,
+  realtimeSyncInterval:null,
+  pollInterval:null
 };
 
 // ═══════════════════════════ AUTH ═════════════════════════════
+// Authorization code flow — redirects through Supabase oauth-callback
+// which stores refresh_token and returns access_token in hash
 function signIn() {
-  const redirectUri = location.origin + location.pathname.replace(/\/?$/,'/');
   const p = new URLSearchParams({
-    client_id:CLIENT_ID, redirect_uri:redirectUri,
-    response_type:'token', scope:SCOPES, prompt:'select_account'
+    client_id:     CLIENT_ID,
+    redirect_uri:  OAUTH_CB,
+    response_type: 'code',
+    scope:         SCOPES + ' https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+    access_type:   'offline',
+    prompt:        'consent',   // force refresh_token every time
   });
   location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + p;
 }
-function signOut() { localStorage.removeItem('gt'); location.replace(location.pathname); }
+
+function signOut() {
+  localStorage.removeItem('gt');
+  if (S.pollInterval) clearInterval(S.pollInterval);
+  location.replace(location.pathname);
+}
 
 async function boot() {
+  // Auth error returned from oauth-callback
+  const urlParams = new URLSearchParams(location.search);
+  if (urlParams.get('auth_error')) {
+    toast('Login error: ' + urlParams.get('auth_error'), 'error');
+    history.replaceState({}, '', location.pathname);
+    return;
+  }
+
+  // Successful return from oauth-callback — token in hash
   const hash = location.hash;
   if (hash && hash.includes('access_token')) {
     const p = new URLSearchParams(hash.slice(1));
     const tok = p.get('access_token');
-    if (tok) {
-      const exp = parseInt(p.get('expires_in')||'3600');
-      localStorage.setItem('gt', JSON.stringify({tok, exp:Date.now()+exp*1000}));
-      history.replaceState({},'',(location.pathname+location.search).replace(/\/$/,'')+'/');
+    const sub = p.get('google_sub');
+    if (tok && sub) {
+      const exp = parseInt(p.get('expires_in') || '3600');
+      localStorage.setItem('gt', JSON.stringify({
+        tok, sub,
+        email: p.get('email') || '',
+        name:  p.get('name')  || '',
+        exp:   Date.now() + exp * 1000
+      }));
+      history.replaceState({}, '', location.pathname);
       S.token = tok;
-      await initApp(); return;
+      await initApp();
+      return;
     }
   }
+
+  // Existing session
   try {
-    const d = JSON.parse(localStorage.getItem('gt')||'null');
-    if (d && d.exp > Date.now()) { S.token = d.tok; await initApp(); }
+    const d = JSON.parse(localStorage.getItem('gt') || 'null');
+    if (d && d.exp > Date.now()) {
+      S.token = d.tok;
+      await initApp();
+    }
   } catch(e) {}
 }
 
 async function initApp() {
-  setStat('Loading profile...');
+  setStat('Loading...');
   try {
-    const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+S.token}});
-    S.user = await r.json();
-    document.getElementById('uav').textContent = (S.user.name||'U')[0].toUpperCase();
-    document.getElementById('uname').textContent = S.user.email;
-    ['uchip','btn-sync','btn-so','sidebar','sync-bar'].forEach(id => document.getElementById(id)?.classList.remove('hidden'));
+    // Load user from localStorage (set during oauth-callback redirect)
+    const d = JSON.parse(localStorage.getItem('gt') || '{}');
+    S.user = { sub: d.sub, email: d.email, name: d.name };
+
+    document.getElementById('uav').textContent = (d.name || d.email || 'U')[0].toUpperCase();
+    document.getElementById('uname').textContent = d.email || '';
+    ['uchip','btn-sync','btn-so','sidebar','sync-bar'].forEach(id =>
+      document.getElementById(id)?.classList.remove('hidden'));
+
     showScreen('inbox');
     await loadUserData();
-    await fullSync();
-    // Auto real-time sync every 5 minutes
-    setInterval(syncEmails, 5 * 60 * 1000);
-  } catch(e) { toast('Auth error: '+e.message,'error'); }
+
+    // Step 1: Load last 5 days immediately (fast)
+    await loadRecentDays(5);
+
+    // Step 2: Tell backend to create/resume sync jobs for full year
+    await startBackendSync();
+
+    // Step 3: Poll backend for progress every 30s
+    startPollLoop();
+
+    // Step 4: Real-time delta sync every 5 min
+    if (!S.realtimeSyncInterval) {
+      S.realtimeSyncInterval = setInterval(syncEmails, 5 * 60 * 1000);
+    }
+
+  } catch(e) {
+    console.error('initApp error:', e);
+    toast('Init error: ' + e.message, 'error');
+  }
+}
+
+// Load last N days directly from Gmail (fast — shown immediately)
+async function loadRecentDays(days) {
+  setDot('pulse'); setStat(`Loading last ${days} days...`);
+  setProgress(10); showSkeleton(8);
+  try {
+    const after = Math.floor((Date.now() - days * 86400 * 1000) / 1000);
+    const data  = await gapi(`/messages?maxResults=500&labelIds=INBOX&q=after:${after}`);
+    const ids   = (data.messages || []).map(m => m.id);
+
+    if (!ids.length) {
+      setStat('No recent emails'); setDot('green'); setProgress(0);
+      return;
+    }
+
+    setStat(`Fetching ${ids.length} recent emails...`);
+    const fetched = await fetchConcurrent(ids, 3);
+    setProgress(60);
+
+    const parsed     = fetched.map(parseMeta);
+    const autoEmails = parsed.filter(isAutoEmail)
+      .map(e => ({...e, priority:'fyi', category:'newsletter', summary:'Newsletter / notification', context:[]}));
+    const toAI = parsed.filter(e => !isAutoEmail(e))
+      .map(e => ({...e, priority:'normal', category:'info', summary:e.snippet, context:[]}));
+    const allNew = [...toAI, ...autoEmails].map(applyRules);
+
+    S.emails     = allNew.sort((a,b) => b.date - a.date);
+    S.lastSync   = new Date();
+    applyFilter(); updateBadges();
+    setProgress(90); setDot('green');
+    setStat(`${S.emails.length} recent emails loaded · syncing full year in background...`);
+    setTimeout(() => setProgress(0), 400);
+
+    // Background classify recent emails
+    if (toAI.length) classifyInBackground(toAI);
+
+  } catch(e) {
+    console.error('loadRecentDays error:', e);
+    setStat('Failed to load recent emails');
+    setDot(''); setProgress(0);
+  }
+}
+
+// Tell Supabase backend to start/resume full-year sync jobs
+async function startBackendSync() {
+  const sub = S.user?.sub;
+  if (!sub) return;
+  try {
+    const res = await fetch(`${SB_FUNC}/start-sync`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SB_KEY },
+      body:    JSON.stringify({ google_sub: sub }),
+    });
+    const data = await res.json();
+    console.log('start-sync:', data);
+  } catch(e) {
+    console.warn('start-sync failed (non-critical):', e.message);
+  }
+}
+
+// Poll sync_jobs table every 30s — load new completed windows
+function startPollLoop() {
+  if (S.pollInterval) clearInterval(S.pollInterval);
+  S.pollInterval = setInterval(pollSyncProgress, POLL_MS);
+  pollSyncProgress(); // immediate first check
+}
+
+async function pollSyncProgress() {
+  const sub = S.user?.sub;
+  if (!sub) return;
+  try {
+    // Get all sync job statuses for this user
+    const r = await sbFetch(
+      `/rest/v1/sync_jobs?google_sub=eq.${sub}&select=window_index,window_label,status,emails_found,emails_cached&order=window_index.asc`,
+      { method: 'GET', headers: { Prefer: 'return=representation' } }
+    );
+    if (!r.ok) return;
+    const jobs = await r.json();
+
+    const total   = jobs.length;
+    const done    = jobs.filter(j => j.status === 'done').length;
+    const failed  = jobs.filter(j => j.status === 'failed').length;
+    const running = jobs.find(j  => j.status === 'running');
+    const pct     = total ? Math.round((done / total) * 100) : 0;
+
+    // Update sync bar
+    if (total > 0) {
+      const label = running?.window_label || jobs.find(j => j.status === 'pending')?.window_label || 'complete';
+      document.getElementById('scounts').textContent =
+        `⟳ BG sync: ${done}/${total} windows · ${pct}% · ${label}`;
+    }
+
+    if (done === total && total > 0) {
+      // All windows done — stop polling, load any remaining from Supabase
+      clearInterval(S.pollInterval);
+      S.pollInterval = null;
+      document.getElementById('scounts').textContent = `✓ Full year synced · ${total} windows`;
+      await loadAllFromCache();
+      return;
+    }
+
+    // Load newly completed windows into UI
+    if (done > S.windowsDone) {
+      S.windowsDone = done;
+      await loadNewlyCompletedWindows(jobs);
+    }
+
+  } catch(e) { console.warn('pollSyncProgress error:', e.message); }
+}
+
+// Load emails from Supabase that aren't in S.emails yet
+async function loadNewlyCompletedWindows(jobs) {
+  const existingIds = new Set(S.emails.map(e => e.id));
+  try {
+    // Get emails from Supabase not already in memory
+    // Use oldest date in current S.emails as a rough cursor
+    const oldestDate = S.emails.length
+      ? Math.min(...S.emails.map(e => e.date))
+      : Date.now();
+
+    const r = await sbFetch(
+      `/rest/v1/gmail_emails?select=*&order=email_date.desc&limit=500`,
+      { method: 'GET' }
+    );
+    if (!r.ok) return;
+    const rows = await r.json();
+    const newEmails = (rows || [])
+      .map(rowToEmail)
+      .filter(e => !existingIds.has(e.id));
+
+    if (newEmails.length) {
+      S.emails = [...S.emails, ...newEmails].sort((a,b) => b.date - a.date);
+      applyFilter(); updateBadges();
+    }
+  } catch(e) { console.warn('loadNewlyCompletedWindows error:', e.message); }
+}
+
+async function loadAllFromCache() {
+  try {
+    setStat('Loading full year from cache...');
+    const existingIds = new Set(S.emails.map(e => e.id));
+    // Paginate through all cached emails
+    let offset = 0;
+    const pageSize = 1000;
+    let fetched = 0;
+    do {
+      const r = await sbFetch(
+        `/rest/v1/gmail_emails?select=*&order=email_date.desc&limit=${pageSize}&offset=${offset}`,
+        { method: 'GET' }
+      );
+      if (!r.ok) break;
+      const rows = await r.json();
+      if (!rows || !rows.length) break;
+      const newEmails = rows.map(rowToEmail).filter(e => !existingIds.has(e.id));
+      newEmails.forEach(e => existingIds.add(e.id));
+      S.emails = [...S.emails, ...newEmails].sort((a,b) => b.date - a.date);
+      fetched = rows.length;
+      offset += pageSize;
+      applyFilter(); updateBadges();
+    } while (fetched === pageSize);
+    setStat(`${S.emails.length} emails · full year loaded`);
+    setDot('green');
+  } catch(e) { console.warn('loadAllFromCache error:', e.message); }
+}
+
+function rowToEmail(e) {
+  return {
+    id:       e.gmail_id,
+    threadId: e.thread_id,
+    subject:  e.subject,
+    from:     e.from_addr,
+    fromName: e.from_name,
+    fromEmail:e.from_email,
+    date:     e.email_date,
+    snippet:  e.snippet,
+    unread:   e.unread,
+    priority: e.priority,
+    category: e.category,
+    summary:  e.ai_summary,
+    context:  e.context_signals || [],
+    labelIds: [],
+    body:     '',
+  };
 }
 
 // ═══════════════════════════ GMAIL ════════════════════════════
@@ -546,122 +787,216 @@ async function gapi(path, opts={}, retries=3) {
   return r.json();
 }
 
-// Full sync — METADATA FIRST, show list fast, classify in background
+// ═══════════════════════════ 5-DAY WINDOW BATCH SYNC ══════════════════
+// Builds 73 windows of 5 days each, newest first
+// Each window: fetch IDs → metadata (concurrency=3) → classify → cache
+// UI renders after EVERY window — fully usable from first batch
+
+function build5DayWindows() {
+  const windows = [];
+  const now = Date.now();
+  const ONE_YEAR = 365 * 24 * 60 * 60 * 1000;
+  const FIVE_DAYS = 5 * 24 * 60 * 60 * 1000;
+  const start = now - ONE_YEAR;
+  // newest first
+  for (let end = now; end > start; end -= FIVE_DAYS) {
+    const wStart = Math.max(end - FIVE_DAYS, start);
+    windows.push({
+      after: Math.floor(wStart / 1000),
+      before: Math.floor(end / 1000),
+      label: new Date(wStart).toLocaleDateString('en-IN',{day:'numeric',month:'short'}) +
+             ' – ' + new Date(end).toLocaleDateString('en-IN',{day:'numeric',month:'short'})
+    });
+  }
+  return windows; // [most recent window first]
+}
+
+// Concurrency-limited fetch — max 3 open connections at once
+async function fetchConcurrent(ids, concurrency=3) {
+  const results = new Array(ids.length).fill(null);
+  let idx = 0;
+  async function worker() {
+    while (idx < ids.length) {
+      const i = idx++;
+      try {
+        results[i] = await gapi(
+          '/messages/'+ids[i]+'?format=metadata' +
+          '&metadataHeaders=From&metadataHeaders=Subject' +
+          '&metadataHeaders=To&metadataHeaders=Date'
+        );
+      } catch(e) { results[i] = null; }
+    }
+  }
+  await Promise.all(Array.from({length: concurrency}, worker));
+  return results.filter(Boolean);
+}
+
 async function fullSync() {
   if (S.syncing) return;
   S.syncing = true;
-  setDot('pulse'); setStat('Fetching email list...');
-  setProgress(5);
-  showSkeleton(10);
+  S.windowsDone = 0;
+  setDot('pulse');
+  showSkeleton(8);
+
+  const windows = build5DayWindows();
+  S.windowsTotal = windows.length;
+  const toClassifyQueue = []; // accumulates across windows for bg classify
+
+  setStat(`Starting batch sync — ${windows.length} windows of 5 days...`);
+  setProgress(2);
 
   try {
-    // STEP 1: IDs only — very fast
-    setStat('Fetching email IDs (last 1 year)...');
-    const allIds = await fetchAllIds();
-    S.totalFetched = allIds.length;
-    setProgress(15);
+    for (let wi = 0; wi < windows.length; wi++) {
+      if (isTokenExpired()) { showReloginPrompt(); break; }
 
-    // STEP 2: Check Supabase cache
-    setStat('Checking cache...');
-    const cached = await getCached(allIds);
-    const cachedMap = {};
-    cached.forEach(e => cachedMap[e.id] = e);
-    const uncachedIds = allIds.filter(id => !cachedMap[id]);
-    setProgress(25);
-    setStat(`Cache: ${cached.length} hit · ${uncachedIds.length} to load...`);
+      const win = windows[wi];
+      const pctBase = Math.round((wi / windows.length) * 90);
+      setProgress(pctBase);
+      setStat(`Window ${wi+1}/${windows.length}: ${win.label}`);
+      updateSyncCounter(wi+1, windows.length, win.label);
 
-    // STEP 3: Fetch METADATA sequentially — concurrency=3, avoids ERR_NETWORK_IO_SUSPENDED
-    const metaRaw = [];
-    const CONCURRENCY = 3;
-    async function fetchWithConcurrency(ids, concurrency) {
-      const results = new Array(ids.length);
-      let idx = 0;
-      async function worker() {
-        while (idx < ids.length) {
-          const i = idx++;
-          try {
-            results[i] = await gapi('/messages/'+ids[i]+'?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=To&metadataHeaders=Date');
-          } catch(e) {
-            results[i] = null; // skip failed
-          }
-          setProgress(25 + Math.round((metaRaw.filter(Boolean).length/Math.max(uncachedIds.length,1))*45));
-          setStat(`Loading ${i+1}/${uncachedIds.length} emails...`);
-        }
+      // 1. Fetch IDs for this 5-day window
+      let winIds = [];
+      try {
+        const q = encodeURIComponent(`after:${win.after} before:${win.before}`);
+        let pageToken = null;
+        do {
+          const url = `/messages?maxResults=500&labelIds=INBOX&q=${q}` + (pageToken ? '&pageToken='+pageToken : '');
+          const data = await gapi(url);
+          (data.messages||[]).forEach(m => winIds.push(m.id));
+          pageToken = data.nextPageToken || null;
+        } while (pageToken);
+      } catch(e) {
+        console.warn(`Window ${wi+1} ID fetch failed:`, e.message);
+        continue; // skip this window, keep going
       }
-      await Promise.all(Array.from({length:concurrency}, worker));
-      return results.filter(Boolean);
+
+      if (!winIds.length) continue;
+
+      // 2. Check cache for this window's IDs
+      const cached = await getCached(winIds);
+      const cachedMap = {};
+      cached.forEach(e => cachedMap[e.id] = e);
+      const uncachedIds = winIds.filter(id => !cachedMap[id]);
+
+      // 3. Fetch metadata for uncached — concurrency=3
+      let fetched = [];
+      if (uncachedIds.length) {
+        setStat(`Window ${wi+1}/${windows.length}: ${win.label} — fetching ${uncachedIds.length} emails`);
+        try { fetched = await fetchConcurrent(uncachedIds, 3); }
+        catch(e) { console.warn(`Window ${wi+1} fetch failed:`, e.message); }
+      }
+
+      // 4. Parse + instant client-side classify (newsletters/noreply)
+      const parsed = fetched.map(parseMeta);
+      const autoEmails = parsed
+        .filter(isAutoEmail)
+        .map(e => ({...e, priority:'fyi', category:'newsletter', summary:'Newsletter / notification', context:[]}));
+      const toAI = parsed
+        .filter(e => !isAutoEmail(e))
+        .map(e => ({...e, priority:'normal', category:'info', summary:e.snippet, context:[]}));
+      const allNew = [...toAI, ...autoEmails].map(applyRules);
+
+      // 5. Merge into S.emails and RENDER immediately
+      const existingIds = new Set(S.emails.map(e => e.id));
+      const fresh = allNew.filter(e => !existingIds.has(e.id));
+      const freshCached = cached.filter(e => !existingIds.has(e.id));
+      S.emails = [...S.emails, ...fresh, ...freshCached].sort((a,b) => b.date - a.date);
+      S.lastSync = new Date();
+      applyFilter(); updateBadges();
+
+      // 6. Queue non-auto emails for background AI classify
+      toClassifyQueue.push(...toAI);
+
+      // 7. Save new emails to cache (fire and forget)
+      if (allNew.length) saveToCache(allNew);
+
+      S.windowsDone = wi + 1;
+      document.getElementById('slast').textContent =
+        `${S.emails.length} emails · window ${wi+1}/${windows.length}`;
+
+      // Small pause between windows — lets browser breathe
+      await new Promise(res => setTimeout(res, 200));
     }
-    const fetched = await fetchWithConcurrency(uncachedIds, CONCURRENCY);
-    metaRaw.push(...fetched);
-    setProgress(70);
 
-    // STEP 4: Parse + auto-classify newsletters client-side
-    const metaParsed = metaRaw.map(parseMeta);
-    const autoEmails = metaParsed.filter(isAutoEmail).map(e=>({...e,priority:'fyi',category:'newsletter',summary:'Newsletter / notification',context:[]}));
-    const toClassify = metaParsed.filter(e=>!isAutoEmail(e)).map(e=>({...e,priority:'normal',category:'info',summary:e.snippet,context:[]}));
-    const allNew = [...toClassify,...autoEmails].map(applyRules);
+    // All windows done
+    setProgress(100);
+    setDot('green');
+    setStat(`${S.emails.length} emails synced across ${windows.length} windows`);
+    document.getElementById('slast').textContent =
+      `${S.emails.length} total · synced ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`;
+    setTimeout(() => setProgress(0), 600);
+    S.syncing = false;
 
-    // STEP 5: SHOW IMMEDIATELY — merge with cache and render
-    S.emails = [...allNew,...cached].sort((a,b)=>b.date-a.date);
-    S.lastSync = new Date();
-    applyFilter(); updateBadges();
-    setProgress(85); setDot('green');
-    setStat(`${S.emails.length} emails loaded · classifying in background...`);
-    document.getElementById('scounts').textContent = `1yr · ${S.emails.length} total · ${cached.length} cached · ${allNew.length} new`;
-    document.getElementById('slast').textContent = 'Synced: '+S.lastSync.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-    setTimeout(()=>setProgress(0),400);
-    S.syncing = false; // release lock — UI fully responsive now
+    // Start background AI classify of all queued emails
+    if (toClassifyQueue.length) {
+      toast(`Inbox ready · classifying ${toClassifyQueue.length} emails in background`, 'success');
+      classifyInBackground(toClassifyQueue);
+    }
 
-    // STEP 6: Background AI classify — tiny batches, non-blocking
-    if (toClassify.length) classifyInBackground(toClassify);
+    // Start 5-min real-time sync loop
+    if (!S.realtimeSyncInterval) {
+      S.realtimeSyncInterval = setInterval(syncEmails, 5 * 60 * 1000);
+    }
 
   } catch(e) {
-    console.error('fullSync:', e);
-    toast('Sync error: '+e.message,'error');
+    console.error('fullSync error:', e);
+    toast('Sync error: '+e.message, 'error');
     setStat('Sync failed — click ⟳ to retry');
     setDot(''); S.syncing = false;
   }
 }
 
-// Lightweight metadata parser — body loaded on-demand when email opened
+function updateSyncCounter(done, total, label) {
+  const pct = Math.round((done/total)*100);
+  document.getElementById('scounts').textContent =
+    `⟳ ${pct}% · window ${done}/${total} · ${label}`;
+}
+
+// Lightweight metadata parser
 function parseMeta(msg) {
-  const h={};
-  (msg.payload?.headers||[]).forEach(hh=>h[hh.name.toLowerCase()]=hh.value);
-  const fromRaw=h.from||'';
+  const h = {};
+  (msg.payload?.headers||[]).forEach(hh => h[hh.name.toLowerCase()] = hh.value);
+  const fromRaw = h.from || '';
   return {
-    id:msg.id, threadId:msg.threadId,
-    subject:h.subject||'(no subject)',
-    from:fromRaw,
-    fromName:fromRaw.replace(/<.*>/,'').replace(/"/g,'').trim()||fromRaw,
-    fromEmail:fromRaw.match(/<(.+)>/)?.[1]||fromRaw,
-    to:h.to||'', date:parseInt(msg.internalDate||'0'),
-    snippet:msg.snippet||'', body:'',
-    labelIds:msg.labelIds||[],
-    unread:(msg.labelIds||[]).includes('UNREAD'),
-    priority:'normal', category:'info', summary:msg.snippet||'', context:[]
+    id: msg.id, threadId: msg.threadId,
+    subject: h.subject || '(no subject)',
+    from: fromRaw,
+    fromName: fromRaw.replace(/<.*>/,'').replace(/"/g,'').trim() || fromRaw,
+    fromEmail: fromRaw.match(/<(.+)>/)?.[1] || fromRaw,
+    to: h.to || '',
+    date: parseInt(msg.internalDate || '0'),
+    snippet: msg.snippet || '',
+    body: '',
+    labelIds: msg.labelIds || [],
+    unread: (msg.labelIds||[]).includes('UNREAD'),
+    priority: 'normal', category: 'info',
+    summary: msg.snippet || '', context: []
   };
 }
 
-// Background classify — runs after UI shown, 5 at a time, 500ms pause
+// Background AI classify — runs in parallel with ongoing window sync
+// 5 emails per batch, 400ms pause — non-blocking
 async function classifyInBackground(emails) {
   const bgBatch = 5;
   let done = 0;
-  for (let i=0; i<emails.length; i+=bgBatch) {
+  for (let i = 0; i < emails.length; i += bgBatch) {
     if (isTokenExpired()) { setStat('Session expired — re-login to continue'); return; }
-    const batch = emails.slice(i, i+bgBatch);
-    const results = await Promise.all(batch.map(classifyEmail));
-    results.forEach(r => {
-      const idx = S.emails.findIndex(e=>e.id===r.id);
-      if (idx>-1) S.emails[idx] = {...S.emails[idx], priority:r.priority, category:r.category, summary:r.summary};
-    });
-    done += results.length;
-    if (done % 25 === 0) { applyFilter(); updateBadges(); }
-    setStat(`Classifying: ${done}/${emails.length}`);
-    await new Promise(res=>setTimeout(res,500));
+    const batch = emails.slice(i, i + bgBatch);
+    try {
+      const results = await Promise.all(batch.map(classifyEmail));
+      results.forEach(r => {
+        const idx = S.emails.findIndex(e => e.id === r.id);
+        if (idx > -1) S.emails[idx] = {...S.emails[idx], priority:r.priority, category:r.category, summary:r.summary};
+      });
+      done += results.length;
+      if (done % 20 === 0) { applyFilter(); updateBadges(); }
+    } catch(e) { /* skip batch on error */ }
+    await new Promise(res => setTimeout(res, 400));
   }
   applyFilter(); updateBadges();
-  setStat(`${S.emails.length} emails ready`);
-  saveToCache(S.emails.filter(e=>e.category!=='info'||e.priority!=='normal'));
+  saveToCache(S.emails.filter(e => e.priority !== 'normal' || e.category !== 'info'));
+  setStat(`${S.emails.length} emails · classification complete`);
 }
 
 // Delta sync — new emails + 7-day re-check for Gmail-side changes
