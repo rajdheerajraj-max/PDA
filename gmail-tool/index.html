@@ -499,6 +499,8 @@ async function initApp() {
     showScreen('inbox');
     await loadUserData();
     await fullSync();
+    // Auto real-time sync every 5 minutes
+    setInterval(syncEmails, 5 * 60 * 1000);
   } catch(e) { toast('Auth error: '+e.message,'error'); }
 }
 
@@ -517,13 +519,13 @@ async function gapi(path, opts={}) {
 async function fullSync() {
   if (S.syncing) return;
   S.syncing = true;
-  setDot('pulse'); setStat('Starting full sync...');
+  setDot('pulse'); setStat('Syncing last 1 year of emails...');
   setProgress(2);
   showSkeleton(10);
 
   try {
     // 1. Get all message IDs from Gmail (paginated)
-    setStat('Fetching all email IDs...');
+    setStat('Fetching email IDs (last 1 year)...');
     const allIds = await fetchAllIds();
     S.totalFetched = allIds.length;
     setStat(`Found ${allIds.length} emails. Checking cache...`);
@@ -590,50 +592,98 @@ async function fullSync() {
     setProgress(100);
     setDot('green'); setStat(`Synced — ${S.emails.length} emails`);
     document.getElementById('slast').textContent = 'Last sync: ' + S.lastSync.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('scounts').textContent = `${S.emails.length} total · ${cached.length} cached · ${allProcessed.length} new`;
+    document.getElementById('scounts').textContent = `1yr scope · ${S.emails.length} total · ${cached.length} cached · ${allProcessed.length} new`;
     setTimeout(()=>setProgress(0),600);
 
   } catch(e) { toast('Sync error: '+e.message,'error'); setStat('Sync failed'); setDot(''); }
   S.syncing = false;
 }
 
-// Delta sync — only new emails since last sync
+// Delta sync — new emails + 7-day re-check for Gmail-side changes
 async function syncEmails() {
   if (S.syncing) { toast('Sync in progress...','error'); return; }
   if (!S.lastSync) { await fullSync(); return; }
 
   S.syncing = true;
-  setDot('pulse'); setStat('Syncing new emails...');
+  setDot('pulse'); setStat('Syncing...');
   setProgress(10);
 
   try {
-    const after = Math.floor(S.lastSync.getTime()/1000);
-    const data = await gapi('/messages?maxResults=100&labelIds=INBOX&q=after:'+after);
-    const msgs = data.messages || [];
+    // PASS 1 — new emails since last sync
+    const afterTs = Math.floor(S.lastSync.getTime()/1000);
+    const newData = await gapi('/messages?maxResults=200&labelIds=INBOX&q=after:'+afterTs);
+    const newMsgs = newData.messages || [];
+    setProgress(20);
 
-    if (!msgs.length) { setStat('Inbox up to date'); setDot('green'); S.syncing=false; setProgress(0); return; }
+    // PASS 2 — last 7 days re-check (catches Gmail-side read/archive/delete)
+    setStat('Re-checking last 7 days...');
+    const recheck7Data = await gapi('/messages?maxResults=500&labelIds=INBOX&q=newer_than:7d');
+    const recheck7Ids = new Set((recheck7Data.messages||[]).map(m=>m.id));
+    setProgress(30);
 
-    setStat(`Fetching ${msgs.length} new emails...`);
-    const fetched = await Promise.all(msgs.map(m=>gapi('/messages/'+m.id+'?format=full')));
-    const parsed = fetched.map(parseEmail);
-    const toAI = parsed.filter(e=>!isAutoEmail(e));
-    const auto = parsed.filter(isAutoEmail).map(e=>({...e,priority:'fyi',category:'newsletter',summary:'Auto-classified',context:[]}));
-    const classified = await Promise.all(toAI.map(classifyEmail));
-    const allNew = [...classified,...auto].map(applyRules);
+    // Detect removals — emails in our cache from last 7d that Gmail no longer returns in INBOX
+    const sevenDaysAgo = Date.now() - 7*24*60*60*1000;
+    const recentInApp = S.emails.filter(e => e.date > sevenDaysAgo);
+    let removedCount = 0;
+    recentInApp.forEach(e => {
+      if (!recheck7Ids.has(e.id)) {
+        // Removed from INBOX in Gmail (archived/deleted/moved)
+        S.emails = S.emails.filter(ex => ex.id !== e.id);
+        removedCount++;
+      }
+    });
 
-    await runContextAnalysis(allNew);
-    saveToCache(allNew);
+    // Fetch full data for new emails only
+    let fresh = 0;
+    if (newMsgs.length) {
+      setStat(`Fetching ${newMsgs.length} new emails...`);
+      const existingIds = new Set(S.emails.map(e=>e.id));
+      const truly_new = newMsgs.filter(m=>!existingIds.has(m.id));
+      if (truly_new.length) {
+        const fetched = await Promise.all(truly_new.map(m=>gapi('/messages/'+m.id+'?format=full')));
+        const parsed = fetched.map(parseEmail);
+        const toAI = parsed.filter(e=>!isAutoEmail(e));
+        const auto = parsed.filter(isAutoEmail).map(e=>({...e,priority:'fyi',category:'newsletter',summary:'Auto-classified',context:[]}));
+        const classified = await Promise.all(toAI.map(classifyEmail));
+        const allNew = [...classified,...auto].map(applyRules);
+        await runContextAnalysis(allNew);
+        saveToCache(allNew);
+        S.emails = [...allNew,...S.emails];
+        fresh = allNew.length;
+      }
+    }
+    setProgress(80);
 
-    // Remove dupes and prepend
-    const existingIds = new Set(S.emails.map(e=>e.id));
-    const fresh = allNew.filter(e=>!existingIds.has(e.id));
-    S.emails = [...fresh,...S.emails].sort((a,b)=>b.date-a.date);
+    // Re-check read status for last 7d emails still in INBOX
+    // Fetch lightweight metadata (no body) for 7d emails to sync read/unread
+    setStat('Syncing read status...');
+    const metaBatch = [...recheck7Ids].slice(0, 100); // cap at 100
+    const metaFetched = await Promise.all(
+      metaBatch.map(id => gapi('/messages/'+id+'?format=minimal').catch(()=>null))
+    );
+    let readChanged = 0;
+    metaFetched.forEach(m => {
+      if (!m) return;
+      const appEmail = S.emails.find(e=>e.id===m.id);
+      if (!appEmail) return;
+      const gmailUnread = (m.labelIds||[]).includes('UNREAD');
+      if (appEmail.unread !== gmailUnread) { appEmail.unread = gmailUnread; readChanged++; }
+    });
+    setProgress(95);
+
+    S.emails = S.emails.sort((a,b)=>b.date-a.date);
     S.lastSync = new Date();
     applyFilter(); updateBadges();
     setProgress(100); setDot('green');
-    setStat(`+${fresh.length} new emails synced`);
+
+    const parts = [];
+    if (fresh) parts.push(`+${fresh} new`);
+    if (removedCount) parts.push(`${removedCount} archived`);
+    if (readChanged) parts.push(`${readChanged} read status`);
+    const msg = parts.length ? parts.join(' · ')+' synced' : 'Inbox up to date';
+    setStat(msg);
     setTimeout(()=>setProgress(0),600);
-    if (fresh.length) toast(`${fresh.length} new emails synced`,'success');
+    if (fresh) toast(`${fresh} new email${fresh>1?'s':''} arrived`,'success');
 
   } catch(e) { toast('Sync error: '+e.message,'error'); setStat('Sync failed'); setDot(''); }
   S.syncing = false;
@@ -643,11 +693,11 @@ async function fetchAllIds() {
   const ids = [];
   let pageToken = null;
   do {
-    const url = '/messages?maxResults=500&labelIds=INBOX' + (pageToken?'&pageToken='+pageToken:'');
+    const url = '/messages?maxResults=500&labelIds=INBOX&q=newer_than:1y' + (pageToken?'&pageToken='+pageToken:'');
     const data = await gapi(url);
     (data.messages||[]).forEach(m=>ids.push(m.id));
     pageToken = data.nextPageToken||null;
-    setStat(`Fetched ${ids.length} IDs...`);
+    setStat(`Fetched ${ids.length} IDs (last 1 year)...`);
   } while(pageToken);
   return ids;
 }
