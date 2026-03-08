@@ -1,431 +1,1737 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Raj's Tools</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gmail Tool — Meritto</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0a; --surface:#111111; --surface2:#1a1a1a; --surface3:#202020;
+  --border:#222222; --border2:#2a2a2a;
+  --text:#e8e8e8; --text2:#888888; --text3:#555555;
+  --accent:#00d4aa; --accent2:#0099ff;
+  --warn:#ff6b35; --danger:#ff3b3b;
+  --contra:#ff3b3b; --compl:#00d4aa; --standalone:#555;
+  --mono:'Space Mono',monospace; --sans:'DM Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
 
-    :root {
-      --black: #0f0f0f;
-      --grey-dark: #3a3a3a;
-      --grey-mid: #888;
-      --grey-light: #e8e8e8;
-      --grey-bg: #f7f7f5;
-      --white: #ffffff;
-      --accent: #1a1a1a;
-      --green: #2d6a4f;
-      --green-light: #f0f7f4;
-      --amber: #92400e;
-      --amber-light: #fffbf0;
-      --blue: #1e3a5f;
-      --blue-light: #f0f4f8;
-      --placeholder: #6b6b6b;
-      --placeholder-light: #f5f5f5;
-    }
+/* TOPBAR */
+.topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:14px;flex-shrink:0;}
+.brand{font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:.05em;}
+.tdiv{width:1px;height:20px;background:var(--border2);}
+.tnav{display:flex;gap:4px;}
+.tnav button{background:none;border:none;cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:500;color:var(--text2);padding:6px 12px;border-radius:6px;transition:all .15s;}
+.tnav button:hover{background:var(--surface2);color:var(--text);}
+.tnav button.active{background:var(--surface2);color:var(--accent);}
+.tright{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.uchip{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:4px 12px 4px 4px;}
+.uavatar{width:24px;height:24px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;}
+.uname{font-size:12px;color:var(--text2);}
+.btn{font-family:var(--sans);font-size:12px;font-weight:600;padding:7px 14px;border-radius:6px;cursor:pointer;border:none;transition:all .15s;}
+.btn-primary{background:var(--accent);color:#000;}.btn-primary:hover{background:#00efc0;}
+.btn-ghost{background:none;border:1px solid var(--border2);color:var(--text2);}.btn-ghost:hover{border-color:var(--text3);color:var(--text);}
+.btn-sync{background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);color:var(--accent);}
+.btn-sync:hover{background:rgba(0,212,170,.2);}
+.btn-sm{padding:4px 10px;font-size:11px;}
 
-    html { font-size: 16px; }
+/* SYNC STATUS */
+.sync-bar{height:28px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;font-family:var(--mono);font-size:10px;color:var(--text3);flex-shrink:0;}
+.sync-stat{display:flex;align-items:center;gap:6px;}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);}
+.sync-dot.green{background:var(--accent);}
+.sync-dot.pulse{animation:sdot 1.5s infinite;}
+@keyframes sdot{0%,100%{opacity:.3;}50%{opacity:1;}}
 
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background-color: var(--grey-bg);
-      color: var(--black);
-      min-height: 100vh;
-      -webkit-font-smoothing: antialiased;
-    }
+/* PROGRESS */
+.prog-bar{height:2px;background:var(--surface2);flex-shrink:0;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:width .3s;}
 
-    /* ── HEADER ── */
-    header {
-      padding: 48px 64px 0;
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      opacity: 0;
-      animation: fadeUp 0.6s ease forwards;
-    }
+/* MAIN */
+.main{display:flex;flex:1;overflow:hidden;}
 
-    .logo-block {}
-    .logo-label {
-      font-family: 'DM Sans', sans-serif;
-      font-weight: 300;
-      font-size: 11px;
-      letter-spacing: 0.18em;
-      text-transform: uppercase;
-      color: var(--grey-mid);
-      margin-bottom: 6px;
-    }
-    .logo-name {
-      font-family: 'DM Serif Display', serif;
-      font-size: 28px;
-      color: var(--black);
-      line-height: 1;
-    }
+/* SIDEBAR */
+.sidebar{width:210px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:14px 0;}
+.slabel{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--text3);text-transform:uppercase;padding:8px 20px 5px;}
+.sitem{display:flex;align-items:center;justify-content:space-between;padding:7px 12px 7px 18px;cursor:pointer;font-size:13px;font-weight:500;color:var(--text2);transition:all .12s;margin:0 8px 1px;border-radius:6px;}
+.sitem:hover{background:var(--surface2);color:var(--text);}
+.sitem.active{background:var(--surface2);color:var(--accent);}
+.sitem-l{display:flex;align-items:center;gap:8px;}
+.badge{background:var(--accent);color:#000;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;font-family:var(--mono);}
+.badge-r{background:var(--danger);color:#fff;}
+.badge-w{background:var(--warn);color:#000;}
+.badge-m{background:var(--surface2);color:var(--text3);}
 
-    .header-meta {
-      text-align: right;
-    }
-    .header-meta-role {
-      font-size: 12px;
-      font-weight: 300;
-      color: var(--grey-mid);
-      letter-spacing: 0.04em;
-    }
-    .header-meta-company {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--grey-dark);
-      margin-top: 2px;
-    }
+/* CONTENT */
+.content{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+.screen{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.screen.active{display:flex;}
 
-    /* ── HERO ── */
-    .hero {
-      padding: 64px 64px 0;
-      opacity: 0;
-      animation: fadeUp 0.6s ease 0.1s forwards;
-    }
-    .hero-eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--grey-mid);
-      margin-bottom: 20px;
-    }
-    .hero-eyebrow::before {
-      content: '';
-      display: block;
-      width: 24px;
-      height: 1px;
-      background: var(--grey-mid);
-    }
-    .hero-heading {
-      font-family: 'DM Serif Display', serif;
-      font-size: clamp(36px, 5vw, 58px);
-      line-height: 1.08;
-      color: var(--black);
-      max-width: 640px;
-      margin-bottom: 20px;
-    }
-    .hero-heading em {
-      font-style: italic;
-      color: var(--grey-mid);
-    }
-    .hero-sub {
-      font-size: 15px;
-      font-weight: 300;
-      color: var(--grey-mid);
-      max-width: 480px;
-      line-height: 1.7;
-    }
+/* LOGIN */
+#screen-login{align-items:center;justify-content:center;background:var(--bg);}
+.login-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:48px;max-width:380px;width:100%;text-align:center;}
+.login-logo{font-family:var(--mono);font-size:28px;color:var(--accent);margin-bottom:8px;}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:32px;line-height:1.6;}
+.google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:12px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-size:14px;font-weight:500;cursor:pointer;font-family:var(--sans);transition:all .15s;}
+.google-btn:hover{border-color:var(--accent);color:var(--accent);}
+.login-feat{margin-top:28px;text-align:left;display:flex;flex-direction:column;gap:8px;}
+.lf{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text2);}
+.lfd{width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0;}
 
-    /* ── DIVIDER ── */
-    .divider {
-      margin: 48px 64px;
-      height: 1px;
-      background: var(--grey-light);
-      opacity: 0;
-      animation: fadeUp 0.5s ease 0.2s forwards;
-    }
+/* INBOX TOOLBAR */
+.itoolbar{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;flex-wrap:wrap;}
+.ititle{font-family:var(--mono);font-size:12px;color:var(--text2);white-space:nowrap;}
+.chips{display:flex;gap:5px;flex-wrap:wrap;}
+.chip{padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--border2);color:var(--text3);transition:all .12s;font-family:var(--mono);}
+.chip:hover{border-color:var(--text3);color:var(--text2);}
+.chip.active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,170,.08);}
+.chip.ch-urgent{border-color:var(--danger);color:var(--danger);}
+.chip.ch-urgent.active{background:rgba(255,59,59,.08);}
+.chip.ch-contra{border-color:var(--contra);color:var(--contra);}
+.chip.ch-contra.active{background:rgba(255,59,59,.08);}
+.tbar-r{margin-left:auto;display:flex;gap:6px;}
 
-    /* ── GRID ── */
-    .grid-label {
-      padding: 0 64px;
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: var(--grey-mid);
-      margin-bottom: 28px;
-      opacity: 0;
-      animation: fadeUp 0.5s ease 0.25s forwards;
-    }
+/* EMAIL LIST */
+.elist{flex:1;overflow-y:auto;}
+.elist::-webkit-scrollbar{width:3px;}
+.elist::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
 
-    .apps-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1px;
-      background: var(--grey-light);
-      margin: 0 64px;
-      border: 1px solid var(--grey-light);
-    }
+.eitem{padding:12px 16px 12px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;display:flex;gap:12px;align-items:flex-start;}
+.eitem:hover{background:var(--surface2);}
+.eitem.unread{border-left:2px solid var(--accent);}
+.eitem.selected{background:rgba(0,212,170,.05);}
+.eprio{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.p-urgent{background:var(--danger);box-shadow:0 0 5px var(--danger);}
+.p-high{background:var(--warn);}
+.p-normal{background:var(--accent);}
+.p-fyi{background:var(--text3);}
+.emain{flex:1;min-width:0;}
+.erow1{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.esender{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;}
+.esender.read{font-weight:400;color:var(--text2);}
+.ecat{font-family:var(--mono);font-size:9px;padding:1px 5px;border-radius:3px;background:var(--surface2);color:var(--text3);text-transform:uppercase;white-space:nowrap;}
+.cat-action{background:rgba(0,153,255,.12);color:var(--accent2);}
+.cat-meeting{background:rgba(0,212,170,.1);color:var(--accent);}
+.etime{margin-left:auto;font-size:10px;color:var(--text3);font-family:var(--mono);white-space:nowrap;}
+.esubj{font-size:12px;color:var(--text);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.esubj.read{color:var(--text2);}
+.esum{font-size:11px;color:var(--text2);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;}
+.esignals{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;}
 
-    /* ── APP CARD ── */
-    .app-card {
-      background: var(--white);
-      padding: 36px 32px;
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      position: relative;
-      text-decoration: none;
-      color: inherit;
-      overflow: hidden;
-      transition: background 0.2s ease;
-      opacity: 0;
-    }
-    .app-card:nth-child(1) { animation: fadeUp 0.5s ease 0.3s forwards; }
-    .app-card:nth-child(2) { animation: fadeUp 0.5s ease 0.38s forwards; }
-    .app-card:nth-child(3) { animation: fadeUp 0.5s ease 0.46s forwards; }
-    .app-card:nth-child(4) { animation: fadeUp 0.5s ease 0.54s forwards; }
-    .app-card:nth-child(5) { animation: fadeUp 0.5s ease 0.62s forwards; }
-    .app-card:nth-child(6) { animation: fadeUp 0.5s ease 0.7s forwards; }
+/* CONTEXT SIGNALS */
+.sig{font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:3px;letter-spacing:.03em;white-space:nowrap;}
+.sig-contra{background:rgba(255,59,59,.15);color:var(--contra);border:1px solid rgba(255,59,59,.3);}
+.sig-compl{background:rgba(0,212,170,.1);color:var(--compl);border:1px solid rgba(0,212,170,.25);}
+.sig-thread{background:rgba(0,153,255,.1);color:var(--accent2);border:1px solid rgba(0,153,255,.25);}
 
-    .app-card:hover { background: var(--grey-bg); }
-    .app-card:hover .card-arrow { transform: translate(3px, -3px); }
+.eactions{display:flex;gap:3px;opacity:0;transition:opacity .12s;flex-shrink:0;}
+.eitem:hover .eactions{opacity:1;}
+.ibtn{width:26px;height:26px;border-radius:5px;border:none;background:var(--surface2);color:var(--text2);cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .12s;}
+.ibtn:hover{background:var(--border2);color:var(--text);}
 
-    .app-card.placeholder {
-      background: var(--grey-bg);
-      cursor: default;
-    }
-    .app-card.placeholder:hover { background: var(--grey-bg); }
+/* SKELETON */
+.skel-row{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border);}
+.skel{background:var(--surface2);border-radius:4px;animation:sk 1.5s infinite;}
+@keyframes sk{0%,100%{opacity:.3;}50%{opacity:.7;}}
 
-    .card-top {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      margin-bottom: 28px;
-    }
+/* THREAD PANEL */
+.tpanel{width:460px;flex-shrink:0;border-left:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface);}
+.thead{padding:14px 18px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.tsubj{font-size:14px;font-weight:600;margin-bottom:8px;line-height:1.4;}
+.tmeta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.ttag{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid var(--border2);color:var(--text3);}
 
-    .card-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-    }
-    .icon-green  { background: var(--green-light); }
-    .icon-amber  { background: var(--amber-light); }
-    .icon-blue   { background: var(--blue-light); }
-    .icon-grey   { background: var(--grey-light); }
+/* CONTEXT PANEL in thread */
+.ctx-panel{background:var(--surface2);border-bottom:1px solid var(--border);padding:12px 18px;flex-shrink:0;}
+.ctx-title{font-family:var(--mono);font-size:9px;letter-spacing:.08em;color:var(--text3);text-transform:uppercase;margin-bottom:8px;}
+.ctx-item{display:flex;gap:8px;padding:6px 8px;border-radius:6px;margin-bottom:4px;cursor:pointer;}
+.ctx-item:hover{background:var(--surface3);}
+.ctx-item.contra{border-left:2px solid var(--contra);background:rgba(255,59,59,.05);}
+.ctx-item.compl{border-left:2px solid var(--compl);background:rgba(0,212,170,.04);}
+.ctx-item.thread{border-left:2px solid var(--accent2);background:rgba(0,153,255,.04);}
+.ctx-icon{font-size:13px;flex-shrink:0;margin-top:1px;}
+.ctx-body{flex:1;min-width:0;}
+.ctx-rel{font-size:11px;font-weight:600;margin-bottom:2px;}
+.ctx-reason{font-size:11px;color:var(--text2);line-height:1.4;}
+.ctx-from{font-size:10px;color:var(--text3);margin-top:2px;font-family:var(--mono);}
 
-    .card-status {
-      font-size: 10px;
-      font-weight: 500;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      padding: 4px 10px;
-      border-radius: 20px;
-    }
-    .status-live    { background: #dcfce7; color: #166534; }
-    .status-soon    { background: #fef9c3; color: #713f12; }
-    .status-planned { background: var(--grey-light); color: var(--grey-mid); }
+.tabbar{padding:8px 18px;border-bottom:1px solid var(--border);display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap;}
+.tbody{flex:1;overflow-y:auto;}
+.tbody::-webkit-scrollbar{width:3px;}
+.tbody::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.tmsg{padding:14px 18px;border-bottom:1px solid var(--border);}
+.mfrom{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.mtime{font-size:10px;color:var(--text3);font-family:var(--mono);margin-bottom:8px;}
+.mbody{font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap;word-break:break-word;}
 
-    .card-title {
-      font-family: 'DM Serif Display', serif;
-      font-size: 22px;
-      color: var(--black);
-      margin-bottom: 8px;
-      line-height: 1.2;
-    }
-    .app-card.placeholder .card-title {
-      color: var(--grey-mid);
-    }
+/* REPLY */
+.rbox{border-top:1px solid var(--border);flex-shrink:0;}
+.rtabs{display:flex;border-bottom:1px solid var(--border);}
+.rtab{flex:1;padding:9px;text-align:center;font-size:12px;font-weight:500;color:var(--text3);cursor:pointer;transition:all .12s;border:none;background:none;}
+.rtab.active{color:var(--accent);border-bottom:2px solid var(--accent);}
+.rcontent{padding:10px 14px;}
+.rta{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:9px 11px;color:var(--text);font-family:var(--sans);font-size:12px;resize:none;outline:none;line-height:1.6;transition:border-color .15s;}
+.rta:focus{border-color:var(--accent);}
+.rfooter{display:flex;justify-content:space-between;align-items:center;margin-top:7px;}
+.tones{display:flex;gap:4px;}
+.tone{padding:3px 7px;border-radius:4px;font-size:10px;cursor:pointer;border:1px solid var(--border2);color:var(--text3);transition:all .12s;background:none;}
+.tone.active{border-color:var(--accent2);color:var(--accent2);}
 
-    .card-desc {
-      font-size: 13px;
-      font-weight: 300;
-      color: var(--grey-mid);
-      line-height: 1.65;
-      flex: 1;
-      margin-bottom: 28px;
-    }
+/* SCREEN CONTENT */
+.scontent{padding:18px;overflow-y:auto;flex:1;}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.stitle{font-family:var(--mono);font-size:11px;color:var(--text2);letter-spacing:.05em;text-transform:uppercase;}
 
-    .card-bottom {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-top: 1px solid var(--grey-light);
-      padding-top: 20px;
-      margin-top: auto;
-    }
+/* TASKS */
+.task-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:7px;display:flex;align-items:flex-start;gap:10px;}
+.tcheck{width:17px;height:17px;border-radius:4px;border:1px solid var(--border2);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:2px;transition:all .12s;font-size:10px;}
+.tcheck:hover{border-color:var(--accent);}
+.tcheck.done{background:var(--accent);border-color:var(--accent);color:#000;}
+.tmain2{flex:1;}
+.ttitle{font-size:13px;font-weight:500;margin-bottom:3px;}
+.ttitle.done{text-decoration:line-through;color:var(--text3);}
+.tmeta2{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+.tfrom{font-size:11px;color:var(--text3);}
+.tdue{font-family:var(--mono);font-size:10px;padding:1px 5px;border-radius:3px;background:rgba(255,107,53,.1);color:var(--warn);}
+.tdue.ov{background:rgba(255,59,59,.1);color:var(--danger);}
+.tdue.ok{background:rgba(0,212,170,.1);color:var(--accent);}
 
-    .card-tag {
-      font-size: 11px;
-      font-weight: 400;
-      color: var(--grey-mid);
-      letter-spacing: 0.04em;
-    }
+/* RULES */
+.rule-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:7px;display:flex;align-items:center;gap:10px;}
+.rtoggle{width:30px;height:17px;border-radius:9px;background:var(--border2);cursor:pointer;position:relative;transition:background .2s;flex-shrink:0;}
+.rtoggle.on{background:var(--accent);}
+.rtoggle::after{content:'';position:absolute;width:13px;height:13px;border-radius:50%;background:white;top:2px;left:2px;transition:left .2s;}
+.rtoggle.on::after{left:15px;}
+.rmain{flex:1;}
+.rname{font-size:13px;font-weight:500;margin-bottom:2px;}
+.rdesc{font-size:12px;color:var(--text2);}
+.raction{font-family:var(--mono);font-size:10px;color:var(--accent2);margin-top:2px;}
 
-    .card-arrow {
-      font-size: 16px;
-      color: var(--grey-mid);
-      transition: transform 0.2s ease;
-      line-height: 1;
-    }
-    .app-card.placeholder .card-arrow { opacity: 0; }
+/* DIGEST */
+.dcard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;margin-bottom:10px;}
+.ddate{font-family:var(--mono);font-size:10px;color:var(--accent);margin-bottom:10px;}
+.dstats{display:flex;gap:12px;margin-bottom:14px;}
+.dstat{flex:1;background:var(--surface2);border-radius:7px;padding:10px;text-align:center;}
+.dnum{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--accent);}
+.dlbl{font-size:10px;color:var(--text3);margin-top:2px;}
+.dai{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border);}
+.dai:last-child{border-bottom:none;}
+.dain{font-family:var(--mono);font-size:10px;color:var(--text3);min-width:16px;}
+.dait{font-size:12px;color:var(--text);line-height:1.5;}
+.daif{font-size:10px;color:var(--text3);margin-top:2px;}
 
-    /* ── FOOTER ── */
-    footer {
-      margin: 48px 64px 48px;
-      padding-top: 28px;
-      border-top: 1px solid var(--grey-light);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      opacity: 0;
-      animation: fadeUp 0.5s ease 0.75s forwards;
-    }
-    .footer-left {
-      font-size: 12px;
-      font-weight: 300;
-      color: var(--grey-mid);
-    }
-    .footer-right {
-      font-size: 11px;
-      font-weight: 300;
-      color: var(--grey-light);
-      letter-spacing: 0.06em;
-    }
+/* FORM */
+.fg{margin-bottom:12px;}
+.fl{font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;display:block;letter-spacing:.03em;}
+.fi,.fs{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .15s;}
+.fi:focus,.fs:focus{border-color:var(--accent);}
+.fs{cursor:pointer;}
+option{background:var(--surface2);}
 
-    /* ── ANIMATIONS ── */
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+/* MODAL */
+.movl{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;align-items:center;justify-content:center;}
+.movl.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:22px;max-width:440px;width:90%;max-height:80vh;overflow-y:auto;}
+.mtitle{font-family:var(--mono);font-size:13px;color:var(--accent);margin-bottom:18px;}
+.mfoot{display:flex;gap:7px;justify-content:flex-end;margin-top:18px;}
 
-    /* ── RESPONSIVE ── */
-    @media (max-width: 1024px) {
-      .apps-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 640px) {
-      header, .hero, .divider, .grid-label, .apps-grid, footer {
-        margin-left: 24px; margin-right: 24px; padding-left: 0; padding-right: 0;
-      }
-      header { padding: 32px 24px 0; }
-      .hero  { padding: 40px 24px 0; }
-      .apps-grid { grid-template-columns: 1fr; margin: 0 24px; }
-      .hero-heading { font-size: 32px; }
-    }
-  </style>
+/* STATUS BAR */
+.statusbar{height:22px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:14px;flex-shrink:0;}
+.sbi{font-family:var(--mono);font-size:10px;color:var(--text3);}
+
+/* TOASTS */
+.tc{position:fixed;bottom:36px;right:18px;z-index:200;display:flex;flex-direction:column;gap:6px;}
+.toast{background:var(--surface2);border:1px solid var(--border2);border-radius:7px;padding:9px 14px;font-size:12px;display:flex;align-items:center;gap:7px;animation:ti .2s ease;min-width:200px;}
+.toast.success{border-color:var(--accent);}
+.toast.error{border-color:var(--danger);}
+@keyframes ti{from{transform:translateX(16px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+
+/* EMPTY */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:10px;padding:40px;}
+.ei{font-size:28px;opacity:.25;}
+.et{font-size:13px;color:var(--text3);text-align:center;}
+
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.spin{animation:sp 1s linear infinite;display:inline-block;}
+@keyframes sp{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+.hidden{display:none!important;}
+</style>
 </head>
 <body>
 
-  <!-- HEADER -->
-  <header>
-    <div class="logo-block">
-      <div class="logo-label">Internal Tools</div>
-      <div class="logo-name">Raj's PDA</div>
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand">G_TOOL</div>
+  <div class="tdiv"></div>
+  <div class="tnav">
+    <button class="active" onclick="switchScreen('inbox')">Inbox</button>
+    <button onclick="switchScreen('tasks')">Tasks</button>
+    <button onclick="switchScreen('digest')">Digest</button>
+    <button onclick="switchScreen('rules')">Rules</button>
+  </div>
+  <div class="tright">
+    <div id="uchip" class="uchip hidden">
+      <div class="uavatar" id="uav">R</div>
+      <span class="uname" id="uname"></span>
     </div>
-    <div class="header-meta">
-      <div class="header-meta-role">SVP · Customer Success & Product</div>
-      <div class="header-meta-company">Meritto (NoPaperForms)</div>
-    </div>
-  </header>
+    <button class="btn btn-sync btn-sm hidden" id="btn-sync" onclick="syncEmails()">⟳ Sync</button>
+    <button class="btn btn-ghost btn-sm hidden" id="btn-so" onclick="signOut()">Sign out</button>
+  </div>
+</div>
 
-  <!-- HERO -->
-  <div class="hero">
-    <div class="hero-eyebrow">Built with Claude AI</div>
-    <h1 class="hero-heading">Operational tools for <em>CS & growth</em> teams</h1>
-    <p class="hero-sub">A growing suite of internal apps for ticket analysis, churn detection, and workflow automation — purpose-built for higher ed SaaS.</p>
+<!-- SYNC STATUS BAR -->
+<div class="sync-bar hidden" id="sync-bar">
+  <div class="sync-stat"><div class="sync-dot" id="sdot"></div><span id="smsg">Ready</span></div>
+  <div class="sync-stat" id="scounts" style="margin-left:auto"></div>
+  <div class="sync-stat" id="slast"></div>
+</div>
+
+<!-- PROGRESS BAR -->
+<div class="prog-bar"><div class="prog-fill" id="pfill"></div></div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar hidden" id="sidebar">
+    <div class="slabel">Inbox</div>
+    <div class="sitem active" onclick="setFilter('all',this)"><div class="sitem-l">📬 All</div><span class="badge" id="b-all">0</span></div>
+    <div class="sitem" onclick="setFilter('urgent',this)"><div class="sitem-l">🔴 Urgent</div><span class="badge badge-r hidden" id="b-urg">0</span></div>
+    <div class="sitem" onclick="setFilter('action',this)"><div class="sitem-l">⚡ Action</div><span class="badge hidden" id="b-act">0</span></div>
+    <div class="sitem" onclick="setFilter('unread',this)"><div class="sitem-l">◎ Unread</div><span class="badge hidden" id="b-unr">0</span></div>
+    <div class="slabel" style="margin-top:8px">Context</div>
+    <div class="sitem" onclick="setFilter('contra',this)"><div class="sitem-l">⚠ Contradictions</div><span class="badge badge-r hidden" id="b-con">0</span></div>
+    <div class="sitem" onclick="setFilter('compl',this)"><div class="sitem-l">✦ Complements</div><span class="badge hidden" id="b-cmp">0</span></div>
+    <div class="slabel" style="margin-top:8px">Saved</div>
+    <div class="sitem" onclick="setFilter('tasks',this)"><div class="sitem-l">✓ Tasks</div><span class="badge badge-m" id="b-tsk">0</span></div>
+    <div class="sitem" onclick="setFilter('saved',this)"><div class="sitem-l">★ Saved</div><span class="badge badge-m" id="b-sav">0</span></div>
   </div>
 
-  <div class="divider"></div>
+  <!-- CONTENT -->
+  <div class="content">
 
-  <!-- GRID -->
-  <div class="grid-label">Apps — 3 active · 3 planned</div>
-
-  <div class="apps-grid">
-
-    <!-- CX Pulse -->
-    <a class="app-card" href="./cx-pulse/index.html">
-      <div class="card-top">
-        <div class="card-icon icon-green">📊</div>
-        <span class="card-status status-soon">In Progress</span>
-      </div>
-      <div class="card-title">CX Pulse</div>
-      <div class="card-desc">Analyze Zoho Desk support tickets for sentiment, criticality scoring, empathy gaps, and response quality across your CS team.</div>
-      <div class="card-bottom">
-        <span class="card-tag">Zoho Desk · Ticket Analysis</span>
-        <span class="card-arrow">↗</span>
-      </div>
-    </a>
-
-    <!-- Churn Radar -->
-    <a class="app-card" href="./churn-radar/index.html">
-      <div class="card-top">
-        <div class="card-icon icon-amber">📡</div>
-        <span class="card-status status-soon">In Progress</span>
-      </div>
-      <div class="card-title">Churn Radar</div>
-      <div class="card-desc">Early churn risk detection dashboard for CS managers. Tracks relationship signals, product utility, and pricing risk across accounts.</div>
-      <div class="card-bottom">
-        <span class="card-tag">CS Dashboard · Risk Scoring</span>
-        <span class="card-arrow">↗</span>
-      </div>
-    </a>
-
-    <!-- Gmail Tool -->
-    <a class="app-card" href="./gmail-tool/index.html">
-      <div class="card-top">
-        <div class="card-icon icon-blue">✉️</div>
-        <span class="card-status status-soon">In Progress</span>
-      </div>
-      <div class="card-title">Gmail Automation</div>
-      <div class="card-desc">AI-powered email triage, categorization, and reply generation. Cuts inbox management time with smart prioritization and draft replies.</div>
-      <div class="card-bottom">
-        <span class="card-tag">Gmail · AI Triage</span>
-        <span class="card-arrow">↗</span>
-      </div>
-    </a>
-
-    <!-- Placeholder 1 -->
-    <div class="app-card placeholder">
-      <div class="card-top">
-        <div class="card-icon icon-grey">＋</div>
-        <span class="card-status status-planned">Planned</span>
-      </div>
-      <div class="card-title">Coming Soon</div>
-      <div class="card-desc">Next tool in the pipeline. Ideas: onboarding health tracker, MEA market dashboard, or renewal forecast model.</div>
-      <div class="card-bottom">
-        <span class="card-tag">TBD</span>
-        <span class="card-arrow">↗</span>
+    <!-- LOGIN -->
+    <div class="screen active" id="screen-login">
+      <div class="login-card">
+        <div class="login-logo">G_TOOL</div>
+        <div class="login-sub">Full Gmail sync with AI context engine — contradictions, complements &amp; smart triage</div>
+        <button class="google-btn" onclick="signIn()">
+          <svg width="16" height="16" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.7 2.5 30.2 0 24 0 14.7 0 6.8 5.4 2.8 13.3l7.8 6.1C12.5 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17z"/><path fill="#FBBC05" d="M10.6 28.6A14.5 14.5 0 019.5 24c0-1.6.3-3.1.7-4.6L2.4 13.3A23.9 23.9 0 000 24c0 3.9.9 7.5 2.8 10.7l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.2 0 11.5-2 15.4-5.5l-7.5-5.8c-2.1 1.4-4.8 2.3-7.9 2.3-6.2 0-11.5-3.5-13.4-8.4l-7.8 6.1C6.8 42.6 14.7 48 24 48z"/></svg>
+          Continue with Google
+        </button>
+        <div class="login-feat">
+          <div class="lf"><div class="lfd"></div>Full inbox sync — all emails, paginated</div>
+          <div class="lf"><div class="lfd"></div>Context engine — detects contradictions &amp; complements</div>
+          <div class="lf"><div class="lfd"></div>Smart triage — priority + category via AI</div>
+          <div class="lf"><div class="lfd"></div>AI reply with full thread context</div>
+          <div class="lf"><div class="lfd"></div>Tasks, rules, daily digest</div>
+        </div>
       </div>
     </div>
 
-    <!-- Placeholder 2 -->
-    <div class="app-card placeholder">
-      <div class="card-top">
-        <div class="card-icon icon-grey">＋</div>
-        <span class="card-status status-planned">Planned</span>
+    <!-- INBOX -->
+    <div class="screen" id="screen-inbox" style="flex-direction:row">
+      <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0">
+        <div class="itoolbar">
+          <span class="ititle" id="inbox-count">—</span>
+          <div class="chips">
+            <span class="chip active" onclick="setChip(this,'all')">All</span>
+            <span class="chip ch-urgent" onclick="setChip(this,'urgent')">Urgent</span>
+            <span class="chip" onclick="setChip(this,'action')">Action</span>
+            <span class="chip" onclick="setChip(this,'meeting')">Meeting</span>
+            <span class="chip ch-contra" onclick="setChip(this,'contra')">⚠ Contra</span>
+            <span class="chip" onclick="setChip(this,'compl')">✦ Compl</span>
+            <span class="chip" onclick="setChip(this,'unread')">Unread</span>
+          </div>
+          <div class="tbar-r">
+            <button class="btn btn-ghost btn-sm" onclick="archiveSel()">Archive sel</button>
+            <button class="btn btn-ghost btn-sm" onclick="markReadSel()">Mark read</button>
+          </div>
+        </div>
+        <div class="elist" id="elist">
+          <div class="empty"><div class="ei">📬</div><div class="et">Sign in to sync your inbox</div></div>
+        </div>
       </div>
-      <div class="card-title">Coming Soon</div>
-      <div class="card-desc">Slot reserved for the next operational tool. Built on demand as new workflows surface across product, CS, and ops teams.</div>
-      <div class="card-bottom">
-        <span class="card-tag">TBD</span>
-        <span class="card-arrow">↗</span>
+      <!-- Thread Panel -->
+      <div class="tpanel hidden" id="tpanel">
+        <div class="thead">
+          <div class="tsubj" id="tsubj">—</div>
+          <div class="tmeta" id="tmeta"></div>
+        </div>
+        <div class="ctx-panel hidden" id="ctx-panel">
+          <div class="ctx-title">Context Signals</div>
+          <div id="ctx-items"></div>
+        </div>
+        <div class="tabbar">
+          <button class="btn btn-primary btn-sm" onclick="generateReply()">✦ Draft Reply</button>
+          <button class="btn btn-ghost btn-sm" onclick="createTask()">+ Task</button>
+          <button class="btn btn-ghost btn-sm" onclick="saveEmail()">★ Save</button>
+          <button class="btn btn-ghost btn-sm" onclick="archiveThread()">Archive</button>
+          <button class="btn btn-ghost btn-sm" onclick="closeThread()">✕</button>
+        </div>
+        <div class="tbody" id="tbody"></div>
+        <div class="rbox hidden" id="rbox">
+          <div class="rtabs">
+            <button class="rtab active" onclick="setRTab(this)">Write</button>
+            <button class="rtab" onclick="setRTab(this)">Preview</button>
+          </div>
+          <div class="rcontent">
+            <textarea class="rta" id="rta" rows="5" placeholder="Your reply..."></textarea>
+            <div class="rfooter">
+              <div class="tones">
+                <button class="tone active" onclick="setTone(this,'formal')">Formal</button>
+                <button class="tone" onclick="setTone(this,'concise')">Concise</button>
+                <button class="tone" onclick="setTone(this,'detailed')">Detailed</button>
+              </div>
+              <div style="display:flex;gap:5px">
+                <button class="btn btn-ghost btn-sm" onclick="generateReply()">↻ Redo</button>
+                <button class="btn btn-primary btn-sm" onclick="sendReply()">Send →</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Placeholder 3 -->
-    <div class="app-card placeholder">
-      <div class="card-top">
-        <div class="card-icon icon-grey">＋</div>
-        <span class="card-status status-planned">Planned</span>
+    <!-- TASKS -->
+    <div class="screen" id="screen-tasks">
+      <div class="scontent">
+        <div class="sh"><span class="stitle">Tasks &amp; Reminders</span><button class="btn btn-primary btn-sm" onclick="openAddTask()">+ Add</button></div>
+        <div id="tasks-list"><div class="empty"><div class="ei">✓</div><div class="et">No tasks yet</div></div></div>
       </div>
-      <div class="card-title">Coming Soon</div>
-      <div class="card-desc">Slot reserved for the next operational tool. Built on demand as new workflows surface across product, CS, and ops teams.</div>
-      <div class="card-bottom">
-        <span class="card-tag">TBD</span>
-        <span class="card-arrow">↗</span>
+    </div>
+
+    <!-- DIGEST -->
+    <div class="screen" id="screen-digest">
+      <div class="scontent">
+        <div class="sh"><span class="stitle">Daily Digest</span><button class="btn btn-primary btn-sm" onclick="generateDigest()">✦ Generate</button></div>
+        <div id="digest-content"><div class="empty"><div class="ei">📋</div><div class="et">Click Generate</div></div></div>
+      </div>
+    </div>
+
+    <!-- RULES -->
+    <div class="screen" id="screen-rules">
+      <div class="scontent">
+        <div class="sh"><span class="stitle">Auto-Read Rules</span><button class="btn btn-primary btn-sm" onclick="openAddRule()">+ Add Rule</button></div>
+        <div id="rules-list"></div>
       </div>
     </div>
 
   </div>
+</div>
 
-  <!-- FOOTER -->
-  <footer>
-    <div class="footer-left">rajdheerajraj-max.github.io/PDA · Internal use only</div>
-    <div class="footer-right">MERITTO · 2026</div>
-  </footer>
+<!-- STATUS BAR -->
+<div class="statusbar">
+  <span class="sbi" id="sb-left">G_TOOL</span>
+  <span class="sbi" id="sb-mid"></span>
+  <span class="sbi" style="margin-left:auto" id="sb-right"></span>
+</div>
 
+<!-- MODAL -->
+<div class="movl" id="movl" onclick="closeMOvl(event)"><div class="modal" id="mcontent"></div></div>
+<div class="tc" id="tc"></div>
+
+<script>
+// ═══════════════════════════ CONFIG ═══════════════════════════
+const CLIENT_ID  = '249250925827-0tt0t6letpbmomkgdq6jm7pto7tpg2iq.apps.googleusercontent.com';
+const SCOPES     = 'https://www.googleapis.com/auth/gmail.modify';
+const SB_URL     = 'https://bigfejxfaactgpiccezu.supabase.co';
+const SB_KEY     = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpZ2ZlanhmYWFjdGdwaWNjZXp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4OTY1OTAsImV4cCI6MjA4ODQ3MjU5MH0.GsrMJWIQtWN9bO4X1IPwJplxB9ebawZKxWeAiktAaf4';
+const SB_FUNC    = 'https://bigfejxfaactgpiccezu.supabase.co/functions/v1';
+const OAUTH_CB   = 'https://bigfejxfaactgpiccezu.supabase.co/functions/v1/oauth-callback';
+const API        = 'https://api.anthropic.com/v1/messages';
+const HAIKU      = 'claude-haiku-4-5-20251001';
+const SONNET     = 'claude-sonnet-4-20250514';
+const AKEY       = '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'; // ← PASTE YOUR ANTHROPIC API KEY HERE (sk-ant-...)
+const BATCH      = 20;
+const POLL_MS    = 30000; // 30s poll interval for background sync progress
+
+// ═══════════════════════════ STATE ════════════════════════════
+const S = {
+  user:null, token:null,
+  emails:[], filtered:[],
+  filter:'all',
+  sel:null,
+  tasks:[], rules:[], saved:[],
+  tone:'formal',
+  syncing:false,
+  totalFetched:0,
+  lastSync:null,
+  windowsDone:0,
+  windowsTotal:0,
+  realtimeSyncInterval:null,
+  pollInterval:null
+};
+
+// ═══════════════════════════ AUTH ═════════════════════════════
+// Authorization code flow — redirects through Supabase oauth-callback
+// which stores refresh_token and returns access_token in hash
+function signIn() {
+  const p = new URLSearchParams({
+    client_id:     CLIENT_ID,
+    redirect_uri:  OAUTH_CB,
+    response_type: 'code',
+    scope:         SCOPES + ' https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+    access_type:   'offline',
+    prompt:        'consent',   // force refresh_token every time
+  });
+  location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + p;
+}
+
+function signOut() {
+  localStorage.removeItem('gt');
+  if (S.pollInterval) clearInterval(S.pollInterval);
+  location.replace(location.pathname);
+}
+
+async function boot() {
+  // Auth error returned from oauth-callback
+  const urlParams = new URLSearchParams(location.search);
+  if (urlParams.get('auth_error')) {
+    toast('Login error: ' + urlParams.get('auth_error'), 'error');
+    history.replaceState({}, '', location.pathname);
+    return;
+  }
+
+  // Successful return from oauth-callback — token in hash
+  const hash = location.hash;
+  if (hash && hash.includes('access_token')) {
+    const p = new URLSearchParams(hash.slice(1));
+    const tok = p.get('access_token');
+    const sub = p.get('google_sub');
+    if (tok && sub) {
+      const exp = parseInt(p.get('expires_in') || '3600');
+      localStorage.setItem('gt', JSON.stringify({
+        tok, sub,
+        email: p.get('email') || '',
+        name:  p.get('name')  || '',
+        exp:   Date.now() + exp * 1000
+      }));
+      history.replaceState({}, '', location.pathname);
+      S.token = tok;
+      await initApp();
+      return;
+    }
+  }
+
+  // Existing session
+  try {
+    const d = JSON.parse(localStorage.getItem('gt') || 'null');
+    if (d && d.exp > Date.now()) {
+      S.token = d.tok;
+      await initApp();
+    }
+  } catch(e) {}
+}
+
+async function initApp() {
+  setStat('Loading...');
+  try {
+    // Load user from localStorage (set during oauth-callback redirect)
+    const d = JSON.parse(localStorage.getItem('gt') || '{}');
+    S.user = { sub: d.sub, email: d.email, name: d.name };
+
+    document.getElementById('uav').textContent = (d.name || d.email || 'U')[0].toUpperCase();
+    document.getElementById('uname').textContent = d.email || '';
+    ['uchip','btn-sync','btn-so','sidebar','sync-bar'].forEach(id =>
+      document.getElementById(id)?.classList.remove('hidden'));
+
+    showScreen('inbox');
+    await loadUserData();
+
+    // Step 1: Load last 5 days immediately (fast)
+    await loadRecentDays(5);
+
+    // Step 2: Tell backend to create/resume sync jobs for full year
+    await startBackendSync();
+
+    // Step 3: Poll backend for progress every 30s
+    startPollLoop();
+
+    // Step 4: Real-time delta sync every 5 min
+    if (!S.realtimeSyncInterval) {
+      S.realtimeSyncInterval = setInterval(syncEmails, 5 * 60 * 1000);
+    }
+
+  } catch(e) {
+    console.error('initApp error:', e);
+    toast('Init error: ' + e.message, 'error');
+  }
+}
+
+// Load last N days directly from Gmail (fast — shown immediately)
+async function loadRecentDays(days) {
+  setDot('pulse'); setStat(`Loading last ${days} days...`);
+  setProgress(10); showSkeleton(8);
+  try {
+    const after = Math.floor((Date.now() - days * 86400 * 1000) / 1000);
+    const data  = await gapi(`/messages?maxResults=500&labelIds=INBOX&q=after:${after}`);
+    const ids   = (data.messages || []).map(m => m.id);
+
+    if (!ids.length) {
+      setStat('No recent emails'); setDot('green'); setProgress(0);
+      return;
+    }
+
+    setStat(`Fetching ${ids.length} recent emails...`);
+    const fetched = await fetchConcurrent(ids, 3);
+    setProgress(60);
+
+    const parsed     = fetched.map(parseMeta);
+    const autoEmails = parsed.filter(isAutoEmail)
+      .map(e => ({...e, priority:'fyi', category:'newsletter', summary:'Newsletter / notification', context:[]}));
+    const toAI = parsed.filter(e => !isAutoEmail(e))
+      .map(e => ({...e, priority:'normal', category:'info', summary:e.snippet, context:[]}));
+    const allNew = [...toAI, ...autoEmails].map(applyRules);
+
+    S.emails     = allNew.sort((a,b) => b.date - a.date);
+    S.lastSync   = new Date();
+    applyFilter(); updateBadges();
+    setProgress(90); setDot('green');
+    setStat(`${S.emails.length} recent emails loaded · syncing full year in background...`);
+    setTimeout(() => setProgress(0), 400);
+
+    // Background classify recent emails
+    if (toAI.length) classifyInBackground(toAI);
+
+  } catch(e) {
+    console.error('loadRecentDays error:', e);
+    setStat('Failed to load recent emails');
+    setDot(''); setProgress(0);
+  }
+}
+
+// Tell Supabase backend to start/resume full-year sync jobs
+async function startBackendSync() {
+  const sub = S.user?.sub;
+  if (!sub) return;
+  try {
+    const res = await fetch(`${SB_FUNC}/start-sync`, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${SB_KEY}`,
+      },
+      body: JSON.stringify({ google_sub: sub }),
+    });
+    const data = await res.json();
+    console.log('start-sync:', data);
+  } catch(e) {
+    console.warn('start-sync failed (non-critical):', e.message);
+  }
+}
+
+// Poll sync_jobs table every 30s — load new completed windows
+function startPollLoop() {
+  if (S.pollInterval) clearInterval(S.pollInterval);
+  S.pollInterval = setInterval(pollSyncProgress, POLL_MS);
+  pollSyncProgress(); // immediate first check
+}
+
+async function pollSyncProgress() {
+  const sub = S.user?.sub;
+  if (!sub) return;
+  try {
+    // Get all sync job statuses for this user
+    const r = await sbFetch(
+      `/rest/v1/sync_jobs?google_sub=eq.${sub}&select=window_index,window_label,status,emails_found,emails_cached&order=window_index.asc`,
+      { method: 'GET', headers: { Prefer: 'return=representation' } }
+    );
+    if (!r.ok) return;
+    const jobs = await r.json();
+
+    const total   = jobs.length;
+    const done    = jobs.filter(j => j.status === 'done').length;
+    const failed  = jobs.filter(j => j.status === 'failed').length;
+    const running = jobs.find(j  => j.status === 'running');
+    const pct     = total ? Math.round((done / total) * 100) : 0;
+
+    // Update sync bar
+    if (total > 0) {
+      const label = running?.window_label || jobs.find(j => j.status === 'pending')?.window_label || 'complete';
+      document.getElementById('scounts').textContent =
+        `⟳ BG sync: ${done}/${total} windows · ${pct}% · ${label}`;
+    }
+
+    if (done === total && total > 0) {
+      // All windows done — stop polling, load any remaining from Supabase
+      clearInterval(S.pollInterval);
+      S.pollInterval = null;
+      document.getElementById('scounts').textContent = `✓ Full year synced · ${total} windows`;
+      await loadAllFromCache();
+      return;
+    }
+
+    // Load newly completed windows into UI
+    if (done > S.windowsDone) {
+      S.windowsDone = done;
+      await loadNewlyCompletedWindows(jobs);
+    }
+
+  } catch(e) { console.warn('pollSyncProgress error:', e.message); }
+}
+
+// Load emails from Supabase that aren't in S.emails yet
+async function loadNewlyCompletedWindows(jobs) {
+  const existingIds = new Set(S.emails.map(e => e.id));
+  try {
+    // Get emails from Supabase not already in memory
+    // Use oldest date in current S.emails as a rough cursor
+    const oldestDate = S.emails.length
+      ? Math.min(...S.emails.map(e => e.date))
+      : Date.now();
+
+    const r = await sbFetch(
+      `/rest/v1/gmail_emails?select=*&order=email_date.desc&limit=500`,
+      { method: 'GET' }
+    );
+    if (!r.ok) return;
+    const rows = await r.json();
+    const newEmails = (rows || [])
+      .map(rowToEmail)
+      .filter(e => !existingIds.has(e.id));
+
+    if (newEmails.length) {
+      S.emails = [...S.emails, ...newEmails].sort((a,b) => b.date - a.date);
+      applyFilter(); updateBadges();
+    }
+  } catch(e) { console.warn('loadNewlyCompletedWindows error:', e.message); }
+}
+
+async function loadAllFromCache() {
+  try {
+    setStat('Loading full year from cache...');
+    const existingIds = new Set(S.emails.map(e => e.id));
+    // Paginate through all cached emails
+    let offset = 0;
+    const pageSize = 1000;
+    let fetched = 0;
+    do {
+      const r = await sbFetch(
+        `/rest/v1/gmail_emails?select=*&order=email_date.desc&limit=${pageSize}&offset=${offset}`,
+        { method: 'GET' }
+      );
+      if (!r.ok) break;
+      const rows = await r.json();
+      if (!rows || !rows.length) break;
+      const newEmails = rows.map(rowToEmail).filter(e => !existingIds.has(e.id));
+      newEmails.forEach(e => existingIds.add(e.id));
+      S.emails = [...S.emails, ...newEmails].sort((a,b) => b.date - a.date);
+      fetched = rows.length;
+      offset += pageSize;
+      applyFilter(); updateBadges();
+    } while (fetched === pageSize);
+    setStat(`${S.emails.length} emails · full year loaded`);
+    setDot('green');
+  } catch(e) { console.warn('loadAllFromCache error:', e.message); }
+}
+
+function rowToEmail(e) {
+  return {
+    id:       e.gmail_id,
+    threadId: e.thread_id,
+    subject:  e.subject,
+    from:     e.from_addr,
+    fromName: e.from_name,
+    fromEmail:e.from_email,
+    date:     e.email_date,
+    snippet:  e.snippet,
+    unread:   e.unread,
+    priority: e.priority,
+    category: e.category,
+    summary:  e.ai_summary,
+    context:  e.context_signals || [],
+    labelIds: [],
+    body:     '',
+  };
+}
+
+// ═══════════════════════════ GMAIL ════════════════════════════
+// Check token expiry before any API call
+function isTokenExpired() {
+  try {
+    const d = JSON.parse(localStorage.getItem('gt')||'null');
+    return !d || d.exp <= Date.now() + 60000; // 60s buffer
+  } catch(e) { return true; }
+}
+
+function showReloginPrompt() {
+  // Don't auto-signout — just show re-login banner
+  document.getElementById('sb-mid').textContent = '⚠ Session expired — click to re-login';
+  document.getElementById('sb-mid').style.color = 'var(--danger)';
+  document.getElementById('sb-mid').style.cursor = 'pointer';
+  document.getElementById('sb-mid').onclick = () => signIn();
+  setDot('');
+}
+
+async function gapi(path, opts={}, retries=3) {
+  // Check expiry before calling
+  if (isTokenExpired()) { showReloginPrompt(); throw new Error('Token expired'); }
+
+  const r = await fetch('https://gmail.googleapis.com/gmail/v1/users/me'+path, {
+    ...opts, headers:{Authorization:'Bearer '+S.token,'Content-Type':'application/json',...(opts.headers||{})}
+  });
+
+  // 401 — token rejected by Google
+  if (r.status===401) { showReloginPrompt(); throw new Error('Session expired'); }
+
+  // 429 — rate limit: wait and retry with exponential backoff
+  if (r.status===429 && retries>0) {
+    const wait = (4-retries) * 2000; // 2s, 4s, 6s
+    setStat(`Rate limited — retrying in ${wait/1000}s...`);
+    await new Promise(res=>setTimeout(res,wait));
+    return gapi(path, opts, retries-1);
+  }
+
+  if (!r.ok) { const e=await r.json().catch(()=>({})); throw new Error(e.error?.message||r.status); }
+  if (r.status===204) return {};
+  return r.json();
+}
+
+// ═══════════════════════════ 5-DAY WINDOW BATCH SYNC ══════════════════
+// Builds 73 windows of 5 days each, newest first
+// Each window: fetch IDs → metadata (concurrency=3) → classify → cache
+// UI renders after EVERY window — fully usable from first batch
+
+function build5DayWindows() {
+  const windows = [];
+  const now = Date.now();
+  const ONE_YEAR = 365 * 24 * 60 * 60 * 1000;
+  const FIVE_DAYS = 5 * 24 * 60 * 60 * 1000;
+  const start = now - ONE_YEAR;
+  // newest first
+  for (let end = now; end > start; end -= FIVE_DAYS) {
+    const wStart = Math.max(end - FIVE_DAYS, start);
+    windows.push({
+      after: Math.floor(wStart / 1000),
+      before: Math.floor(end / 1000),
+      label: new Date(wStart).toLocaleDateString('en-IN',{day:'numeric',month:'short'}) +
+             ' – ' + new Date(end).toLocaleDateString('en-IN',{day:'numeric',month:'short'})
+    });
+  }
+  return windows; // [most recent window first]
+}
+
+// Concurrency-limited fetch — max 3 open connections at once
+async function fetchConcurrent(ids, concurrency=3) {
+  const results = new Array(ids.length).fill(null);
+  let idx = 0;
+  async function worker() {
+    while (idx < ids.length) {
+      const i = idx++;
+      try {
+        results[i] = await gapi(
+          '/messages/'+ids[i]+'?format=metadata' +
+          '&metadataHeaders=From&metadataHeaders=Subject' +
+          '&metadataHeaders=To&metadataHeaders=Date'
+        );
+      } catch(e) { results[i] = null; }
+    }
+  }
+  await Promise.all(Array.from({length: concurrency}, worker));
+  return results.filter(Boolean);
+}
+
+async function fullSync() {
+  if (S.syncing) return;
+  S.syncing = true;
+  S.windowsDone = 0;
+  setDot('pulse');
+  showSkeleton(8);
+
+  const windows = build5DayWindows();
+  S.windowsTotal = windows.length;
+  const toClassifyQueue = []; // accumulates across windows for bg classify
+
+  setStat(`Starting batch sync — ${windows.length} windows of 5 days...`);
+  setProgress(2);
+
+  try {
+    for (let wi = 0; wi < windows.length; wi++) {
+      if (isTokenExpired()) { showReloginPrompt(); break; }
+
+      const win = windows[wi];
+      const pctBase = Math.round((wi / windows.length) * 90);
+      setProgress(pctBase);
+      setStat(`Window ${wi+1}/${windows.length}: ${win.label}`);
+      updateSyncCounter(wi+1, windows.length, win.label);
+
+      // 1. Fetch IDs for this 5-day window
+      let winIds = [];
+      try {
+        const q = encodeURIComponent(`after:${win.after} before:${win.before}`);
+        let pageToken = null;
+        do {
+          const url = `/messages?maxResults=500&labelIds=INBOX&q=${q}` + (pageToken ? '&pageToken='+pageToken : '');
+          const data = await gapi(url);
+          (data.messages||[]).forEach(m => winIds.push(m.id));
+          pageToken = data.nextPageToken || null;
+        } while (pageToken);
+      } catch(e) {
+        console.warn(`Window ${wi+1} ID fetch failed:`, e.message);
+        continue; // skip this window, keep going
+      }
+
+      if (!winIds.length) continue;
+
+      // 2. Check cache for this window's IDs
+      const cached = await getCached(winIds);
+      const cachedMap = {};
+      cached.forEach(e => cachedMap[e.id] = e);
+      const uncachedIds = winIds.filter(id => !cachedMap[id]);
+
+      // 3. Fetch metadata for uncached — concurrency=3
+      let fetched = [];
+      if (uncachedIds.length) {
+        setStat(`Window ${wi+1}/${windows.length}: ${win.label} — fetching ${uncachedIds.length} emails`);
+        try { fetched = await fetchConcurrent(uncachedIds, 3); }
+        catch(e) { console.warn(`Window ${wi+1} fetch failed:`, e.message); }
+      }
+
+      // 4. Parse + instant client-side classify (newsletters/noreply)
+      const parsed = fetched.map(parseMeta);
+      const autoEmails = parsed
+        .filter(isAutoEmail)
+        .map(e => ({...e, priority:'fyi', category:'newsletter', summary:'Newsletter / notification', context:[]}));
+      const toAI = parsed
+        .filter(e => !isAutoEmail(e))
+        .map(e => ({...e, priority:'normal', category:'info', summary:e.snippet, context:[]}));
+      const allNew = [...toAI, ...autoEmails].map(applyRules);
+
+      // 5. Merge into S.emails and RENDER immediately
+      const existingIds = new Set(S.emails.map(e => e.id));
+      const fresh = allNew.filter(e => !existingIds.has(e.id));
+      const freshCached = cached.filter(e => !existingIds.has(e.id));
+      S.emails = [...S.emails, ...fresh, ...freshCached].sort((a,b) => b.date - a.date);
+      S.lastSync = new Date();
+      applyFilter(); updateBadges();
+
+      // 6. Queue non-auto emails for background AI classify
+      toClassifyQueue.push(...toAI);
+
+      // 7. Save new emails to cache (fire and forget)
+      if (allNew.length) saveToCache(allNew);
+
+      S.windowsDone = wi + 1;
+      document.getElementById('slast').textContent =
+        `${S.emails.length} emails · window ${wi+1}/${windows.length}`;
+
+      // Small pause between windows — lets browser breathe
+      await new Promise(res => setTimeout(res, 200));
+    }
+
+    // All windows done
+    setProgress(100);
+    setDot('green');
+    setStat(`${S.emails.length} emails synced across ${windows.length} windows`);
+    document.getElementById('slast').textContent =
+      `${S.emails.length} total · synced ${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}`;
+    setTimeout(() => setProgress(0), 600);
+    S.syncing = false;
+
+    // Start background AI classify of all queued emails
+    if (toClassifyQueue.length) {
+      toast(`Inbox ready · classifying ${toClassifyQueue.length} emails in background`, 'success');
+      classifyInBackground(toClassifyQueue);
+    }
+
+    // Start 5-min real-time sync loop
+    if (!S.realtimeSyncInterval) {
+      S.realtimeSyncInterval = setInterval(syncEmails, 5 * 60 * 1000);
+    }
+
+  } catch(e) {
+    console.error('fullSync error:', e);
+    toast('Sync error: '+e.message, 'error');
+    setStat('Sync failed — click ⟳ to retry');
+    setDot(''); S.syncing = false;
+  }
+}
+
+function updateSyncCounter(done, total, label) {
+  const pct = Math.round((done/total)*100);
+  document.getElementById('scounts').textContent =
+    `⟳ ${pct}% · window ${done}/${total} · ${label}`;
+}
+
+// Lightweight metadata parser
+function parseMeta(msg) {
+  const h = {};
+  (msg.payload?.headers||[]).forEach(hh => h[hh.name.toLowerCase()] = hh.value);
+  const fromRaw = h.from || '';
+  return {
+    id: msg.id, threadId: msg.threadId,
+    subject: h.subject || '(no subject)',
+    from: fromRaw,
+    fromName: fromRaw.replace(/<.*>/,'').replace(/"/g,'').trim() || fromRaw,
+    fromEmail: fromRaw.match(/<(.+)>/)?.[1] || fromRaw,
+    to: h.to || '',
+    date: parseInt(msg.internalDate || '0'),
+    snippet: msg.snippet || '',
+    body: '',
+    labelIds: msg.labelIds || [],
+    unread: (msg.labelIds||[]).includes('UNREAD'),
+    priority: 'normal', category: 'info',
+    summary: msg.snippet || '', context: []
+  };
+}
+
+// Background AI classify — runs in parallel with ongoing window sync
+// 5 emails per batch, 400ms pause — non-blocking
+async function classifyInBackground(emails) {
+  const bgBatch = 5;
+  let done = 0;
+  for (let i = 0; i < emails.length; i += bgBatch) {
+    if (isTokenExpired()) { setStat('Session expired — re-login to continue'); return; }
+    const batch = emails.slice(i, i + bgBatch);
+    try {
+      const results = await Promise.all(batch.map(classifyEmail));
+      results.forEach(r => {
+        const idx = S.emails.findIndex(e => e.id === r.id);
+        if (idx > -1) S.emails[idx] = {...S.emails[idx], priority:r.priority, category:r.category, summary:r.summary};
+      });
+      done += results.length;
+      if (done % 20 === 0) { applyFilter(); updateBadges(); }
+    } catch(e) { /* skip batch on error */ }
+    await new Promise(res => setTimeout(res, 400));
+  }
+  applyFilter(); updateBadges();
+  saveToCache(S.emails.filter(e => e.priority !== 'normal' || e.category !== 'info'));
+  setStat(`${S.emails.length} emails · classification complete`);
+}
+
+// Delta sync — new emails + 7-day re-check for Gmail-side changes
+async function syncEmails() {
+  if (S.syncing) { toast('Sync in progress...','error'); return; }
+  if (!S.lastSync) { await fullSync(); return; }
+
+  S.syncing = true;
+  setDot('pulse'); setStat('Syncing...');
+  setProgress(10);
+
+  try {
+    // PASS 1 — new emails since last sync
+    const afterTs = Math.floor(S.lastSync.getTime()/1000);
+    const newData = await gapi('/messages?maxResults=200&labelIds=INBOX&q=after:'+afterTs);
+    const newMsgs = newData.messages || [];
+    setProgress(20);
+
+    // PASS 2 — last 7 days re-check (catches Gmail-side read/archive/delete)
+    setStat('Re-checking last 7 days...');
+    const recheck7Data = await gapi('/messages?maxResults=500&labelIds=INBOX&q=newer_than:7d');
+    const recheck7Ids = new Set((recheck7Data.messages||[]).map(m=>m.id));
+    setProgress(30);
+
+    // Detect removals — emails in our cache from last 7d that Gmail no longer returns in INBOX
+    const sevenDaysAgo = Date.now() - 7*24*60*60*1000;
+    const recentInApp = S.emails.filter(e => e.date > sevenDaysAgo);
+    let removedCount = 0;
+    recentInApp.forEach(e => {
+      if (!recheck7Ids.has(e.id)) {
+        // Removed from INBOX in Gmail (archived/deleted/moved)
+        S.emails = S.emails.filter(ex => ex.id !== e.id);
+        removedCount++;
+      }
+    });
+
+    // Fetch full data for new emails only
+    let fresh = 0;
+    if (newMsgs.length) {
+      setStat(`Fetching ${newMsgs.length} new emails...`);
+      const existingIds = new Set(S.emails.map(e=>e.id));
+      const truly_new = newMsgs.filter(m=>!existingIds.has(m.id));
+      if (truly_new.length) {
+        // Sequential concurrency=3 to avoid ERR_NETWORK_IO_SUSPENDED
+        const fetchedArr = [];
+        let si=0;
+        async function sw(){while(si<truly_new.length){const i=si++;try{fetchedArr[i]=await gapi('/messages/'+truly_new[i].id+'?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=To&metadataHeaders=Date');}catch(e){fetchedArr[i]=null;}}}
+        await Promise.all([sw(),sw(),sw()]);
+        const fetched = fetchedArr.filter(Boolean);
+        const parsed = fetched.map(parseMeta);
+        const toAI = parsed.filter(e=>!isAutoEmail(e));
+        const auto = parsed.filter(isAutoEmail).map(e=>({...e,priority:'fyi',category:'newsletter',summary:'Auto-classified',context:[]}));
+        const classified = await Promise.all(toAI.map(classifyEmail));
+        const allNew = [...classified,...auto].map(applyRules);
+        await runContextAnalysis(allNew);
+        saveToCache(allNew);
+        S.emails = [...allNew,...S.emails];
+        fresh = allNew.length;
+      }
+    }
+    setProgress(80);
+
+    // Re-check read status for last 7d emails still in INBOX
+    // Fetch lightweight metadata in small batches to avoid 429
+    setStat('Syncing read status...');
+    const metaBatch = [...recheck7Ids].slice(0, 60); // cap at 60 for read-status check
+    const metaFetched = new Array(metaBatch.length);
+    let msi=0;
+    async function mw(){while(msi<metaBatch.length){const i=msi++;try{metaFetched[i]=await gapi('/messages/'+metaBatch[i]+'?format=minimal');}catch(e){metaFetched[i]=null;}}}
+    await Promise.all([mw(),mw(),mw()]);
+    let readChanged = 0;
+    metaFetched.forEach(m => {
+      if (!m) return;
+      const appEmail = S.emails.find(e=>e.id===m.id);
+      if (!appEmail) return;
+      const gmailUnread = (m.labelIds||[]).includes('UNREAD');
+      if (appEmail.unread !== gmailUnread) { appEmail.unread = gmailUnread; readChanged++; }
+    });
+    setProgress(95);
+
+    S.emails = S.emails.sort((a,b)=>b.date-a.date);
+    S.lastSync = new Date();
+    applyFilter(); updateBadges();
+    setProgress(100); setDot('green');
+
+    const parts = [];
+    if (fresh) parts.push(`+${fresh} new`);
+    if (removedCount) parts.push(`${removedCount} archived`);
+    if (readChanged) parts.push(`${readChanged} read status`);
+    const msg = parts.length ? parts.join(' · ')+' synced' : 'Inbox up to date';
+    setStat(msg);
+    setTimeout(()=>setProgress(0),600);
+    if (fresh) toast(`${fresh} new email${fresh>1?'s':''} arrived`,'success');
+
+  } catch(e) { toast('Sync error: '+e.message,'error'); setStat('Sync failed'); setDot(''); }
+  S.syncing = false;
+}
+
+async function fetchAllIds() {
+  const ids = [];
+  let pageToken = null;
+  do {
+    const url = '/messages?maxResults=500&labelIds=INBOX&q=newer_than:1y' + (pageToken?'&pageToken='+pageToken:'');
+    const data = await gapi(url);
+    (data.messages||[]).forEach(m=>ids.push(m.id));
+    pageToken = data.nextPageToken||null;
+    setStat(`Fetched ${ids.length} IDs (last 1 year)...`);
+  } while(pageToken);
+  return ids;
+}
+
+function parseEmail(msg) {
+  const h={};
+  (msg.payload?.headers||[]).forEach(hh=>h[hh.name.toLowerCase()]=hh.value);
+  const parts=[];
+  function ep(p){if(!p)return;if(p.mimeType==='text/plain'&&p.body?.data){try{parts.push(atob(p.body.data.replace(/-/g,'+').replace(/_/g,'/')));}catch(e){}}if(p.parts)p.parts.forEach(ep);}
+  ep(msg.payload);
+  const fromRaw=h.from||'';
+  return {
+    id:msg.id, threadId:msg.threadId,
+    subject:h.subject||'(no subject)',
+    from:fromRaw,
+    fromName:fromRaw.replace(/<.*>/,'').replace(/"/g,'').trim()||fromRaw,
+    fromEmail:fromRaw.match(/<(.+)>/)?.[1]||fromRaw,
+    to:h.to||'', date:parseInt(msg.internalDate),
+    snippet:msg.snippet||'',
+    body:parts.join('\n').slice(0,2000),
+    labelIds:msg.labelIds||[],
+    unread:(msg.labelIds||[]).includes('UNREAD'),
+    priority:'normal', category:'info', summary:'', context:[]
+  };
+}
+
+function isAutoEmail(e) {
+  const f=(e.from||'').toLowerCase(), s=(e.subject||'').toLowerCase();
+  return ['noreply','no-reply','donotreply','newsletter','notifications@','alerts@','updates@','mailer@','postmaster@'].some(p=>f.includes(p))
+    ||['unsubscribe','your receipt','order confirmed','invoice #'].some(p=>s.includes(p));
+}
+
+function applyRules(email) {
+  for(const r of S.rules){
+    if(!r.enabled)continue;
+    const val=(r.value||'').toLowerCase();
+    let match=false;
+    if(r.type==='sender')match=email.from.toLowerCase().includes(val);
+    if(r.type==='domain')match=email.fromEmail.toLowerCase().includes(val);
+    if(r.type==='subject')match=email.subject.toLowerCase().includes(val);
+    if(match){
+      if(r.action==='mark_read')email.unread=false;
+      if(r.action==='mark_fyi')email.priority='fyi';
+      if(r.action==='archive')email.labelIds=(email.labelIds||[]).filter(l=>l!=='INBOX');
+      email.ruleApplied=r.name;
+    }
+  }
+  return email;
+}
+
+// ═══════════════════════════ CONTEXT ENGINE ════════════════════
+// Jaccard similarity on subject keywords
+function tokenize(str) {
+  return new Set((str||'').toLowerCase()
+    .replace(/re:|fwd:|fw:/gi,'')
+    .split(/\W+/)
+    .filter(w=>w.length>3&&!['your','with','this','that','from','have','will','been','they','what','when','where'].includes(w)));
+}
+function jaccard(a,b) {
+  const inter=[...a].filter(x=>b.has(x)).length;
+  const union=new Set([...a,...b]).size;
+  return union===0?0:inter/union;
+}
+
+function findRelated(email, allEmails, limit=5) {
+  const eTok = tokenize(email.subject+' '+email.body.slice(0,200));
+  const eDomain = email.fromEmail.split('@')[1]||'';
+  const scored = allEmails
+    .filter(e=>e.id!==email.id)
+    .map(e=>{
+      let score=0;
+      // Same thread — highest priority
+      if(e.threadId===email.threadId) score+=10;
+      // Same sender domain
+      const eDom2=(e.fromEmail.split('@')[1]||'');
+      if(eDomain&&eDom2===eDomain) score+=3;
+      // Subject keyword similarity
+      const eTok2=tokenize(e.subject+' '+e.body.slice(0,200));
+      score+=jaccard(eTok,eTok2)*8;
+      return {email:e,score};
+    })
+    .filter(x=>x.score>1)
+    .sort((a,b)=>b.score-a.score)
+    .slice(0,limit)
+    .map(x=>x.email);
+  return scored;
+}
+
+async function runContextAnalysis(newEmails) {
+  // Only run on non-FYI emails with some body content
+  const eligible = newEmails.filter(e=>e.priority!=='fyi'&&e.body.length>50);
+  if (!eligible.length) return;
+
+  // Process in batches of 5 (Sonnet calls are expensive)
+  const cbatch = 5;
+  for(let i=0;i<eligible.length;i+=cbatch){
+    const batch = eligible.slice(i,i+cbatch);
+    await Promise.all(batch.map(async e=>{
+      const related = findRelated(e, S.emails.concat(newEmails), 3);
+      if(!related.length){e.context=[];return;}
+      e.context = await detectContextSignals(e, related);
+    }));
+  }
+}
+
+async function detectContextSignals(email, relatedEmails) {
+  if(!relatedEmails.length) return [];
+  try {
+    const relStr = relatedEmails.map((r,i)=>
+      `[${i+1}] From: ${r.fromName} | Subject: ${r.subject} | Date: ${new Date(r.date).toLocaleDateString('en-IN')} | Summary: ${r.summary||r.snippet.slice(0,80)}`
+    ).join('\n');
+
+    const r = await fetch(API,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':AKEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:HAIKU, max_tokens:400,
+        system:'You are an email context analyzer. Return ONLY valid JSON array. No markdown.',
+        messages:[{role:'user',content:`Analyze this email against related emails and detect contradictions or complements.
+
+CURRENT EMAIL:
+From: ${email.fromName}
+Subject: ${email.subject}
+Body: ${email.body.slice(0,400)}
+
+RELATED EMAILS:
+${relStr}
+
+Return a JSON array of signals:
+[{"type":"contradiction"|"complement"|"thread","relatedIndex":1,"reason":"one sentence explanation max 12 words","relatedSubject":"subject of related email"}]
+
+Only include signals you are confident about. Empty array [] if no clear signals.`}]
+      })
+    });
+    const d = await r.json();
+    const txt=(d.content?.[0]?.text||'[]').replace(/```json|```/g,'').trim();
+    const signals = JSON.parse(txt);
+    // Attach related email refs
+    return signals.map(s=>({
+      ...s,
+      relatedEmail: relatedEmails[s.relatedIndex-1]||null
+    }));
+  } catch(e) { return []; }
+}
+
+// ═══════════════════════════ CLASSIFY ═════════════════════════
+async function classifyEmail(email) {
+  // Use body if available, else snippet (metadata-only emails)
+  const content = email.body ? email.body.slice(0,350) : email.snippet.slice(0,200);
+  try {
+    const r = await fetch(API,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':AKEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:HAIKU, max_tokens:150,
+        system:'Email classifier. Return ONLY valid JSON.',
+        messages:[{role:'user',content:`{"priority":"urgent|high|normal|fyi","category":"action|meeting|info|newsletter","summary":"max 10 words"}\n\nFrom:${email.from}\nSubject:${email.subject}\nSnippet:${content}`}]
+      })
+    });
+    const d=await r.json();
+    const obj=JSON.parse((d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim());
+    return {...email,priority:obj.priority||'normal',category:obj.category||'info',summary:obj.summary||email.snippet.slice(0,80),context:[]};
+  } catch(e){return{...email,priority:'normal',category:'info',summary:email.snippet.slice(0,80),context:[]};}
+}
+
+// ═══════════════════════════ REPLY ════════════════════════════
+async function generateReply() {
+  const email=S.sel; if(!email)return;
+  const rbox=document.getElementById('rbox'),ta=document.getElementById('rta');
+  rbox.classList.remove('hidden'); ta.value='⏳ Generating...'; ta.disabled=true;
+
+  // Get thread context for better reply
+  const related = findRelated(email, S.emails, 3);
+  const ctxStr = related.length ? '\n\nRELATED CONTEXT:\n'+related.map(r=>`- ${r.subject}: ${r.summary||r.snippet.slice(0,60)}`).join('\n') : '';
+
+  try {
+    const r=await fetch(API,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':AKEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:SONNET, max_tokens:700,
+        system:`You are a professional email assistant for a SaaS executive at Meritto. Write a ${S.tone} reply. Reply body only, no subject line. Use related context if relevant.`,
+        messages:[{role:'user',content:`Reply to this email.\n\nFrom: ${email.from}\nSubject: ${email.subject}\nBody: ${email.body.slice(0,1000)}${ctxStr}`}]
+      })
+    });
+    const d=await r.json();
+    ta.value=d.content?.[0]?.text||'';
+  } catch(e){ta.value='';toast('Reply generation failed','error');}
+  ta.disabled=false;
+}
+
+async function sendReply() {
+  const email=S.sel,body=document.getElementById('rta').value;
+  if(!email||!body.trim())return;
+  const raw=btoa(unescape(encodeURIComponent(
+    `To: ${email.fromEmail}\r\nSubject: Re: ${email.subject}\r\nIn-Reply-To: ${email.id}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${body}`
+  ))).replace(/\+/g,'-').replace(/\//g,'_');
+  try {
+    await gapi('/messages/send',{method:'POST',body:JSON.stringify({raw,threadId:email.threadId})});
+    toast('Reply sent ✓','success');
+    document.getElementById('rbox').classList.add('hidden');
+  } catch(e){toast('Send failed: '+e.message,'error');}
+}
+
+// ═══════════════════════════ THREAD VIEW ══════════════════════
+async function openEmail(id) {
+  const email=S.emails.find(e=>e.id===id); if(!email)return;
+  S.sel=email;
+  document.querySelectorAll('.eitem').forEach(el=>el.classList.remove('selected'));
+  document.querySelector('[data-id="'+id+'"]')?.classList.add('selected');
+  document.getElementById('tpanel').classList.remove('hidden');
+  document.getElementById('rbox').classList.add('hidden');
+  document.getElementById('tsubj').textContent=email.subject;
+
+  // Meta tags
+  const meta=document.getElementById('tmeta');
+  meta.innerHTML=`
+    <span class="ttag" style="border-color:var(--${email.priority==='urgent'?'danger':email.priority==='high'?'warn':'accent'});color:var(--${email.priority==='urgent'?'danger':email.priority==='high'?'warn':'accent'})">${email.priority.toUpperCase()}</span>
+    <span class="ttag">${email.category}</span>
+    ${email.ruleApplied?`<span class="ttag">🔧 ${email.ruleApplied}</span>`:''}
+    ${(email.context||[]).some(c=>c.type==='contradiction')?`<span class="ttag" style="border-color:var(--contra);color:var(--contra)">⚠ CONTRADICTION</span>`:''}
+    ${(email.context||[]).some(c=>c.type==='complement')?`<span class="ttag" style="border-color:var(--compl);color:var(--compl)">✦ COMPLEMENT</span>`:''}
+  `;
+
+  // Context signals
+  const ctxPanel=document.getElementById('ctx-panel'),ctxItems=document.getElementById('ctx-items');
+  const signals=email.context||[];
+  if(signals.length){
+    ctxPanel.classList.remove('hidden');
+    ctxItems.innerHTML=signals.map(s=>`
+      <div class="ctx-item ${s.type}" onclick="${s.relatedEmail?`openEmail('${s.relatedEmail.id}')`:''}" title="Click to open related email">
+        <div class="ctx-icon">${s.type==='contradiction'?'⚠':s.type==='complement'?'✦':'🔗'}</div>
+        <div class="ctx-body">
+          <div class="ctx-rel" style="color:var(--${s.type==='contradiction'?'contra':s.type==='complement'?'compl':'accent2'})">${s.type.toUpperCase()}</div>
+          <div class="ctx-reason">${esc(s.reason||'')}</div>
+          <div class="ctx-from">Re: ${esc(s.relatedSubject||s.relatedEmail?.subject||'—')}</div>
+        </div>
+      </div>`).join('');
+  } else { ctxPanel.classList.add('hidden'); }
+
+  // Thread messages
+  const tbody=document.getElementById('tbody');
+  tbody.innerHTML='<div style="padding:14px;font-size:11px;color:var(--text3)">Loading thread...</div>';
+  try {
+    const thread=await gapi('/threads/'+email.threadId+'?format=full');
+    tbody.innerHTML=(thread.messages||[]).map(m=>{
+      const h={};(m.payload?.headers||[]).forEach(hh=>h[hh.name.toLowerCase()]=hh.value);
+      const parts=[];
+      function ep(p){if(!p)return;if(p.mimeType==='text/plain'&&p.body?.data){try{parts.push(atob(p.body.data.replace(/-/g,'+').replace(/_/g,'/')));}catch(e){}}if(p.parts)p.parts.forEach(ep);}
+      ep(m.payload);
+      return `<div class="tmsg">
+        <div class="mfrom">${esc(h.from||'—')}</div>
+        <div class="mtime">${new Date(parseInt(m.internalDate)).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}</div>
+        <div class="mbody">${esc((parts.join('\n')||m.snippet||'').slice(0,3000))}</div>
+      </div>`;
+    }).join('');
+  } catch(e){ tbody.innerHTML=`<div class="tmsg"><div class="mfrom">${esc(email.from)}</div><div class="mbody">${esc(email.snippet)}</div></div>`; }
+
+  if(email.unread){
+    email.unread=false;
+    document.querySelector('[data-id="'+id+'"]')?.classList.remove('unread');
+    gapi('/messages/'+id+'/modify',{method:'POST',body:JSON.stringify({removeLabelIds:['UNREAD']})}).catch(()=>{});
+    updateBadges();
+  }
+}
+
+function closeThread(){document.getElementById('tpanel').classList.add('hidden');S.sel=null;}
+function archiveThread(){
+  if(!S.sel)return;
+  gapi('/messages/'+S.sel.id+'/modify',{method:'POST',body:JSON.stringify({removeLabelIds:['INBOX']})})
+    .then(()=>{toast('Archived ✓','success');closeThread();S.emails=S.emails.filter(e=>e.id!==S.sel?.id);applyFilter();}).catch(e=>toast('Error: '+e.message,'error'));
+}
+function saveEmail(){
+  if(!S.sel||S.saved.find(e=>e.id===S.sel.id)){toast('Already saved','error');return;}
+  S.saved.push(S.sel);saveUserKey('saved_emails',S.saved);updateBadges();toast('Saved ★','success');
+}
+function archiveSel(){
+  const ch=document.querySelectorAll('.echk:checked');
+  if(!ch.length){toast('Select emails first','error');return;}
+  Promise.all([...ch].map(c=>gapi('/messages/'+c.dataset.id+'/modify',{method:'POST',body:JSON.stringify({removeLabelIds:['INBOX']})})))
+    .then(()=>{toast('Archived '+ch.length+' ✓','success');syncEmails();});
+}
+function markReadSel(){
+  const ch=document.querySelectorAll('.echk:checked');
+  if(!ch.length){toast('Select emails first','error');return;}
+  Promise.all([...ch].map(c=>gapi('/messages/'+c.dataset.id+'/modify',{method:'POST',body:JSON.stringify({removeLabelIds:['UNREAD']})})))
+    .then(()=>{toast('Marked read ✓','success');syncEmails();});
+}
+
+// ═══════════════════════════ TASKS ════════════════════════════
+function createTask(){
+  if(!S.sel)return;
+  openModal(`<div class="mtitle">+ Create Task</div>
+    <div class="fg"><label class="fl">Task Title</label><input class="fi" id="ti" value="${esc(S.sel.subject)}"/></div>
+    <div class="fg"><label class="fl">Due Date</label><input class="fi" id="td" type="date" value="${new Date(Date.now()+172800000).toISOString().slice(0,10)}"/></div>
+    <div class="fg"><label class="fl">Notes</label><input class="fi" id="tn" placeholder="Optional..."/></div>
+    <div class="mfoot"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-primary btn-sm" onclick="saveTask()">Create</button></div>`);
+}
+function openAddTask(){
+  openModal(`<div class="mtitle">+ New Task</div>
+    <div class="fg"><label class="fl">Title</label><input class="fi" id="ti" placeholder="Task description..."/></div>
+    <div class="fg"><label class="fl">Due Date</label><input class="fi" id="td" type="date" value="${new Date(Date.now()+86400000).toISOString().slice(0,10)}"/></div>
+    <div class="fg"><label class="fl">Notes</label><input class="fi" id="tn" placeholder="Optional..."/></div>
+    <div class="mfoot"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-primary btn-sm" onclick="saveTask()">Create</button></div>`);
+}
+function saveTask(){
+  const t={id:Date.now(),title:document.getElementById('ti')?.value,due:document.getElementById('td')?.value,notes:document.getElementById('tn')?.value,from:S.sel?.fromName||'',emailId:S.sel?.id,done:false};
+  if(!t.title)return;
+  S.tasks.push(t);saveUserKey('tasks',S.tasks);updateBadges();renderTasks();closeModal();toast('Task created ✓','success');
+}
+function toggleTask(id){const t=S.tasks.find(t=>t.id===id);if(t){t.done=!t.done;saveUserKey('tasks',S.tasks);renderTasks();}}
+function deleteTask(id){S.tasks=S.tasks.filter(t=>t.id!==id);saveUserKey('tasks',S.tasks);updateBadges();renderTasks();}
+function renderTasks(){
+  const el=document.getElementById('tasks-list');
+  if(!S.tasks.length){el.innerHTML='<div class="empty"><div class="ei">✓</div><div class="et">No tasks yet</div></div>';return;}
+  const sorted=[...S.tasks].sort((a,b)=>a.done-b.done||new Date(a.due)-new Date(b.due));
+  el.innerHTML=sorted.map(t=>{
+    const due=new Date(t.due),today=new Date();today.setHours(0,0,0,0);
+    const dc=!t.done?(due<today?'ov':due.getTime()===today.getTime()?'':'ok'):'';
+    return `<div class="task-item">
+      <div class="tcheck ${t.done?'done':''}" onclick="toggleTask(${t.id})">${t.done?'✓':''}</div>
+      <div class="tmain2">
+        <div class="ttitle ${t.done?'done':''}">${esc(t.title)}</div>
+        <div class="tmeta2">${t.from?`<span class="tfrom">${esc(t.from)}</span>`:''} ${t.due?`<span class="tdue ${dc}">${due.toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span>`:''} ${t.notes?`<span class="tfrom">${esc(t.notes)}</span>`:''}</div>
+      </div>
+      <button class="ibtn" onclick="deleteTask(${t.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════ DIGEST ═══════════════════════════
+async function generateDigest(){
+  const el=document.getElementById('digest-content');
+  el.innerHTML='<div class="empty"><div class="spin" style="font-size:22px;opacity:.4">◌</div><div class="et">Generating...</div></div>';
+  const urgent=S.emails.filter(e=>e.priority==='urgent').slice(0,5);
+  const action=S.emails.filter(e=>e.category==='action').slice(0,5);
+  const contra=S.emails.filter(e=>(e.context||[]).some(c=>c.type==='contradiction')).slice(0,3);
+  try{
+    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json','x-api-key':AKEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:SONNET,max_tokens:900,
+        system:'Executive email assistant. Return ONLY JSON: {"summary":"2 sentences","actions":[{"item":"action","from":"name"}],"insight":"1 key insight","contradictions":[{"item":"description","from":"name"}]}',
+        messages:[{role:'user',content:`Digest:\nURGENT:\n${urgent.map(e=>`- ${e.subject} (${e.fromName}): ${e.summary}`).join('\n')}\nACTION:\n${action.map(e=>`- ${e.subject} (${e.fromName}): ${e.summary}`).join('\n')}\nCONTRADICTIONS:\n${contra.map(e=>`- ${e.subject}: ${(e.context||[]).find(c=>c.type==='contradiction')?.reason}`).join('\n')}`}]})});
+    const d=await r.json();
+    const data=JSON.parse((d.content?.[0]?.text||'{}').replace(/```json|```/g,'').trim());
+    const today=new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long'});
+    el.innerHTML=`<div class="dcard">
+      <div class="ddate">📋 DIGEST — ${today.toUpperCase()}</div>
+      <div class="dstats">
+        <div class="dstat"><div class="dnum">${S.emails.length}</div><div class="dlbl">Total</div></div>
+        <div class="dstat"><div class="dnum" style="color:var(--danger)">${urgent.length}</div><div class="dlbl">Urgent</div></div>
+        <div class="dstat"><div class="dnum" style="color:var(--accent2)">${action.length}</div><div class="dlbl">Action</div></div>
+        <div class="dstat"><div class="dnum" style="color:var(--contra)">${contra.length}</div><div class="dlbl">Contra</div></div>
+      </div>
+      <div style="font-size:12px;color:var(--text);line-height:1.6;margin-bottom:14px;padding:10px;background:var(--surface2);border-radius:7px">${data.summary||''}</div>
+      ${(data.contradictions||[]).length?`<div class="stitle" style="margin-bottom:8px;color:var(--contra)">⚠ CONTRADICTIONS</div>
+      ${data.contradictions.map((c,i)=>`<div class="dai"><div class="dain">${i+1}.</div><div><div class="dait">${esc(c.item)}</div><div class="daif">${esc(c.from)}</div></div></div>`).join('')}
+      <div style="margin-bottom:12px"></div>`:''}
+      <div class="stitle" style="margin-bottom:8px">TOP ACTIONS</div>
+      ${(data.actions||[]).map((a,i)=>`<div class="dai"><div class="dain">${i+1}.</div><div><div class="dait">${esc(a.item)}</div><div class="daif">${esc(a.from)}</div></div></div>`).join('')}
+      ${data.insight?`<div style="margin-top:12px;font-size:11px;color:var(--text2);padding:9px;background:rgba(0,212,170,.05);border:1px solid rgba(0,212,170,.15);border-radius:6px">💡 ${esc(data.insight)}</div>`:''}
+    </div>`;
+  }catch(e){el.innerHTML='<div class="empty"><div class="ei">⚠</div><div class="et">Failed to generate</div></div>';}
+}
+
+// ═══════════════════════════ RULES ════════════════════════════
+function openAddRule(){
+  openModal(`<div class="mtitle">+ Auto Rule</div>
+    <div class="fg"><label class="fl">Rule Name</label><input class="fi" id="rn" placeholder="e.g. Zoho Alerts"/></div>
+    <div class="fg"><label class="fl">Match Type</label><select class="fs" id="rt"><option value="sender">Sender contains</option><option value="domain">Domain contains</option><option value="subject">Subject contains</option></select></div>
+    <div class="fg"><label class="fl">Match Value</label><input class="fi" id="rv" placeholder="e.g. noreply@zoho.com"/></div>
+    <div class="fg"><label class="fl">Action</label><select class="fs" id="ra"><option value="mark_read">Mark as read</option><option value="mark_fyi">Label as FYI</option><option value="archive">Archive</option></select></div>
+    <div class="mfoot"><button class="btn btn-ghost btn-sm" onclick="closeModal()">Cancel</button><button class="btn btn-primary btn-sm" onclick="saveRule()">Create</button></div>`);
+}
+function saveRule(){
+  const r={id:Date.now(),name:document.getElementById('rn')?.value,type:document.getElementById('rt')?.value,value:document.getElementById('rv')?.value,action:document.getElementById('ra')?.value,enabled:true};
+  if(!r.name||!r.value)return;
+  S.rules.push(r);saveUserKey('rules',S.rules);renderRules();closeModal();toast('Rule created ✓','success');
+}
+function toggleRule(id){const r=S.rules.find(r=>r.id===id);if(r){r.enabled=!r.enabled;saveUserKey('rules',S.rules);renderRules();}}
+function deleteRule(id){S.rules=S.rules.filter(r=>r.id!==id);saveUserKey('rules',S.rules);renderRules();}
+function renderRules(){
+  const el=document.getElementById('rules-list');
+  const bi=[{id:-1,name:'Newsletter auto-filter',type:'sender',value:'noreply/unsubscribe',action:'mark_fyi',enabled:true,bi:true},{id:-2,name:'Auto-notifications',type:'sender',value:'notifications@/alerts@',action:'mark_read',enabled:true,bi:true}];
+  el.innerHTML=[...bi,...S.rules].map(r=>`<div class="rule-item">
+    <div class="rtoggle ${r.enabled?'on':''}" onclick="${r.bi?'':` toggleRule(${r.id})`}"></div>
+    <div class="rmain"><div class="rname">${esc(r.name)} ${r.bi?'<span style="font-size:10px;color:var(--text3)">(built-in)</span>':''}</div><div class="rdesc">${r.type} contains "${esc(r.value)}"</div><div class="raction">→ ${r.action.replace('_',' ')}</div></div>
+    ${!r.bi?`<button class="ibtn" onclick="deleteRule(${r.id})">✕</button>`:''}
+  </div>`).join('');
+}
+
+// ═══════════════════════════ SUPABASE ═════════════════════════
+// Timeout wrapper — Supabase calls never block more than 8s
+async function sbFetch(path, opts={}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const r = await fetch(SB_URL+path, {
+      ...opts,
+      signal: controller.signal,
+      headers: {
+        apikey: SB_KEY,
+        Authorization: 'Bearer '+SB_KEY,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation',
+        ...(opts.headers||{})
+      }
+    });
+    clearTimeout(timer);
+    return r;
+  } catch(e) {
+    clearTimeout(timer);
+    if (e.name==='AbortError') throw new Error('Supabase timeout');
+    throw e;
+  }
+}
+
+// Check if Supabase tables exist before using cache
+let sbAvailable = null; // null=unknown, true=ok, false=unavailable
+async function checkSupabase() {
+  if (sbAvailable !== null) return sbAvailable;
+  try {
+    const r = await sbFetch('/rest/v1/gmail_emails?limit=1', {method:'GET'});
+    sbAvailable = r.ok;
+    if (!r.ok) {
+      const err = await r.json().catch(()=>({}));
+      console.warn('Supabase unavailable:', r.status, err);
+      setStat('Cache unavailable — fetching all from Gmail...');
+    }
+  } catch(e) {
+    sbAvailable = false;
+    console.warn('Supabase error:', e.message);
+  }
+  return sbAvailable;
+}
+
+async function getCached(ids) {
+  if (!ids.length) return [];
+  const ok = await checkSupabase();
+  if (!ok) return []; // graceful fallback — fetch all from Gmail
+
+  const results = [];
+  const chunk = 200; // smaller chunks, safer
+  try {
+    for (let i=0; i<ids.length; i+=chunk) {
+      const slice = ids.slice(i, i+chunk);
+      const r = await sbFetch('/rest/v1/gmail_emails?select=gmail_id,thread_id,subject,from_addr,from_name,from_email,email_date,snippet,unread,priority,category,ai_summary,context_signals&gmail_id=in.('+slice.join(',')+')', {method:'GET'});
+      if (!r.ok) { console.warn('Cache fetch failed:', r.status); continue; }
+      const data = await r.json();
+      results.push(...(data||[]).map(e=>({
+        id:e.gmail_id, threadId:e.thread_id, subject:e.subject,
+        from:e.from_addr, fromName:e.from_name, fromEmail:e.from_email,
+        date:e.email_date, snippet:e.snippet, unread:e.unread,
+        priority:e.priority, category:e.category, summary:e.ai_summary,
+        context:e.context_signals||[], labelIds:[]
+      })));
+    }
+  } catch(e) { console.warn('getCached error:', e.message); }
+  return results;
+}
+
+async function saveToCache(emails) {
+  const ok = await checkSupabase();
+  if (!ok) return; // silent skip if DB unavailable
+  const rows = emails.map(e=>({
+    gmail_id:e.id, thread_id:e.threadId, subject:e.subject,
+    from_addr:e.from, from_name:e.fromName, from_email:e.fromEmail,
+    email_date:e.date, snippet:e.snippet, unread:e.unread,
+    priority:e.priority, category:e.category, ai_summary:e.summary,
+    context_signals:e.context||[]
+  }));
+  const chunk = 50;
+  for (let i=0; i<rows.length; i+=chunk) {
+    try {
+      await sbFetch('/rest/v1/gmail_emails', {
+        method:'POST', body:JSON.stringify(rows.slice(i,i+chunk)),
+        headers:{Prefer:'resolution=merge-duplicates,return=minimal'}
+      });
+    } catch(e) { console.warn('saveToCache error:', e.message); }
+  }
+}
+
+async function saveUserKey(key, value) {
+  const ok = await checkSupabase();
+  if (!ok) return;
+  const uid = S.user?.sub||'default';
+  try {
+    await sbFetch('/rest/v1/user_data', {
+      method:'POST', body:JSON.stringify({user_id:uid, data_key:key, data_value:value}),
+      headers:{Prefer:'resolution=merge-duplicates,return=minimal'}
+    });
+  } catch(e) { console.warn('saveUserKey error:', e.message); }
+}
+
+async function loadUserData() {
+  const ok = await checkSupabase();
+  if (!ok) { renderRules(); return; }
+  const uid = S.user?.sub||'default';
+  try {
+    const r = await sbFetch('/rest/v1/user_data?user_id=eq.'+uid+'&select=*', {method:'GET'});
+    if (!r.ok) { renderRules(); return; }
+    const data = await r.json();
+    (data||[]).forEach(row=>{
+      if(row.data_key==='tasks') S.tasks=row.data_value||[];
+      if(row.data_key==='rules') S.rules=row.data_value||[];
+      if(row.data_key==='saved_emails') S.saved=row.data_value||[];
+    });
+    renderTasks(); renderRules(); updateBadges();
+  } catch(e) { console.warn('loadUserData error:', e.message); renderRules(); }
+}
+
+// ═══════════════════════════ RENDER ═══════════════════════════
+function applyFilter(){
+  const f=S.filter;
+  S.filtered=S.emails.filter(e=>{
+    if(f==='all')return true;
+    if(f==='urgent')return e.priority==='urgent';
+    if(f==='action')return e.category==='action';
+    if(f==='meeting')return e.category==='meeting';
+    if(f==='unread')return e.unread;
+    if(f==='contra')return(e.context||[]).some(c=>c.type==='contradiction');
+    if(f==='compl')return(e.context||[]).some(c=>c.type==='complement');
+    if(f==='tasks')return S.tasks.some(t=>t.emailId===e.id);
+    if(f==='saved')return S.saved.some(s=>s.id===e.id);
+    return true;
+  });
+  document.getElementById('inbox-count').textContent=S.filtered.length+' emails';
+  renderEmails();
+}
+
+function renderEmails(){
+  const el=document.getElementById('elist');
+  if(!S.filtered.length){el.innerHTML='<div class="empty"><div class="ei">📭</div><div class="et">No emails</div></div>';return;}
+  el.innerHTML=S.filtered.map(e=>{
+    const contra=(e.context||[]).some(c=>c.type==='contradiction');
+    const compl=(e.context||[]).some(c=>c.type==='complement');
+    const thread=(e.context||[]).some(c=>c.type==='thread');
+    const signals=[];
+    if(contra)signals.push(`<span class="sig sig-contra">⚠ CONTRA</span>`);
+    if(compl)signals.push(`<span class="sig sig-compl">✦ COMPL</span>`);
+    if(thread&&!contra&&!compl)signals.push(`<span class="sig sig-thread">🔗 THREAD</span>`);
+    return `<div class="eitem ${e.unread?'unread':''}" data-id="${e.id}" onclick="openEmail('${e.id}')">
+      <input type="checkbox" class="echk" data-id="${e.id}" style="flex-shrink:0;accent-color:var(--accent);margin-top:3px" onclick="event.stopPropagation()"/>
+      <div class="eprio p-${e.priority||'normal'}"></div>
+      <div class="emain">
+        <div class="erow1">
+          <span class="esender ${e.unread?'':'read'}">${esc(e.fromName||e.from)}</span>
+          <span class="ecat cat-${e.category||'info'}">${e.category||'info'}</span>
+          <span class="etime">${fmtT(e.date)}</span>
+        </div>
+        <div class="esubj ${e.unread?'':'read'}">${esc(e.subject)}</div>
+        <div class="esum">${esc(e.summary||e.snippet)}</div>
+        ${signals.length?`<div class="esignals">${signals.join('')}</div>`:''}
+      </div>
+      <div class="eactions">
+        <button class="ibtn" title="Archive" onclick="event.stopPropagation();qArch('${e.id}')">⬇</button>
+        <button class="ibtn" title="Task" onclick="event.stopPropagation();S.sel=S.emails.find(e=>e.id==='${e.id}');createTask()">+</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateBadges(){
+  document.getElementById('b-all').textContent=S.emails.length;
+  const u=S.emails.filter(e=>e.priority==='urgent').length;
+  const bu=document.getElementById('b-urg');bu.textContent=u;u?bu.classList.remove('hidden'):bu.classList.add('hidden');
+  const a=S.emails.filter(e=>e.category==='action').length;
+  const ba=document.getElementById('b-act');ba.textContent=a;a?ba.classList.remove('hidden'):ba.classList.add('hidden');
+  const nr=S.emails.filter(e=>e.unread).length;
+  const bn=document.getElementById('b-unr');bn.textContent=nr;nr?bn.classList.remove('hidden'):bn.classList.add('hidden');
+  const co=S.emails.filter(e=>(e.context||[]).some(c=>c.type==='contradiction')).length;
+  const bc=document.getElementById('b-con');bc.textContent=co;co?bc.classList.remove('hidden'):bc.classList.add('hidden');
+  const cm=S.emails.filter(e=>(e.context||[]).some(c=>c.type==='complement')).length;
+  const bm=document.getElementById('b-cmp');bm.textContent=cm;cm?bm.classList.remove('hidden'):bm.classList.add('hidden');
+  document.getElementById('b-tsk').textContent=S.tasks.filter(t=>!t.done).length;
+  document.getElementById('b-sav').textContent=S.saved.length;
+}
+
+function showSkeleton(n){
+  document.getElementById('elist').innerHTML=Array(n).fill(0).map(()=>`<div class="skel-row"><div class="skel" style="width:7px;height:7px;border-radius:50%"></div><div style="flex:1"><div class="skel" style="height:10px;width:35%;margin-bottom:5px;border-radius:3px"></div><div class="skel" style="height:9px;width:60%;margin-bottom:4px;border-radius:3px"></div><div class="skel" style="height:8px;width:80%;border-radius:3px"></div></div></div>`).join('');
+}
+
+function qArch(id){
+  gapi('/messages/'+id+'/modify',{method:'POST',body:JSON.stringify({removeLabelIds:['INBOX']})})
+    .then(()=>{S.emails=S.emails.filter(e=>e.id!==id);applyFilter();toast('Archived ✓','success');}).catch(e=>toast('Error: '+e.message,'error'));
+}
+
+// ═══════════════════════════ UI HELPERS ═══════════════════════
+function switchScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='none';});
+  const s=document.getElementById('screen-'+name);
+  if(s){s.classList.add('active');s.style.display='flex';}
+  document.querySelectorAll('.tnav button').forEach(b=>{
+    const map={inbox:'Inbox',tasks:'Tasks',digest:'Digest',rules:'Rules'};
+    b.classList.toggle('active',b.textContent===map[name]);
+  });
+  if(name==='tasks')renderTasks();
+  if(name==='rules')renderRules();
+}
+function showScreen(name){switchScreen(name);}
+function setFilter(f,el){S.filter=f;document.querySelectorAll('.sitem').forEach(s=>s.classList.remove('active'));el?.classList.add('active');applyFilter();}
+function setChip(el,f){document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');S.filter=f;applyFilter();}
+function setTone(el,t){S.tone=t;document.querySelectorAll('.tone').forEach(c=>c.classList.remove('active'));el.classList.add('active');}
+function setRTab(el){document.querySelectorAll('.rtab').forEach(t=>t.classList.remove('active'));el.classList.add('active');}
+function setProgress(p){document.getElementById('pfill').style.width=p+'%';}
+function setStat(m){document.getElementById('smsg').textContent=m;document.getElementById('sb-mid').textContent=m;}
+function setDot(cls){const d=document.getElementById('sdot');d.className='sync-dot';if(cls)d.classList.add(cls);}
+function openModal(h){document.getElementById('mcontent').innerHTML=h;document.getElementById('movl').classList.add('open');}
+function closeModal(){document.getElementById('movl').classList.remove('open');}
+function closeMOvl(e){if(e.target===document.getElementById('movl'))closeModal();}
+function toast(msg,type='success'){
+  const el=document.createElement('div');el.className='toast '+type;
+  el.innerHTML=`<span>${type==='success'?'✓':'⚠'}</span> ${msg}`;
+  document.getElementById('tc').appendChild(el);
+  setTimeout(()=>el.remove(),3000);
+}
+function fmtT(ts){
+  const d=new Date(ts),now=new Date();
+  if(d.toDateString()===now.toDateString())return d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  if(now-d<604800000)return d.toLocaleDateString('en-IN',{weekday:'short'});
+  return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+boot();
+</script>
 </body>
 </html>
