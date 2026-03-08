@@ -568,7 +568,9 @@ async function fullSync() {
     cached.forEach(e => cachedMap[e.id] = e);
     const uncachedIds = allIds.filter(id => !cachedMap[id]);
 
-    setStat(`Cache: ${cached.length} hit. Fetching ${uncachedIds.length} new...`);
+    setStat(cached.length > 0 
+      ? `Cache: ${cached.length} hit. Fetching ${uncachedIds.length} new...`
+      : `No cache — fetching all ${uncachedIds.length} emails from Gmail...`);
     setProgress(20);
 
     // 3. Fetch uncached in batches of 10 (avoid 429 rate limit)
@@ -1125,49 +1127,123 @@ function renderRules(){
 }
 
 // ═══════════════════════════ SUPABASE ═════════════════════════
-async function sbReq(path,opts={}){
-  return fetch(SB_URL+path,{...opts,headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY,'Content-Type':'application/json',Prefer:'return=representation',...(opts.headers||{})}});
-}
-async function getCached(ids){
-  if(!ids.length)return[];
-  try{
-    // Supabase IN() max ~1000, chunk if needed
-    const results=[];
-    const chunk=500;
-    for(let i=0;i<ids.length;i+=chunk){
-      const slice=ids.slice(i,i+chunk);
-      const r=await sbReq('/rest/v1/gmail_emails?gmail_id=in.('+slice.join(',')+')', {method:'GET'});
-      if(!r.ok)continue;
-      const data=await r.json();
-      results.push(...(data||[]).map(e=>({id:e.gmail_id,threadId:e.thread_id,subject:e.subject,from:e.from_addr,fromName:e.from_name,fromEmail:e.from_email,date:e.email_date,snippet:e.snippet,unread:e.unread,priority:e.priority,category:e.category,summary:e.ai_summary,context:e.context_signals||[],labelIds:[]})));
-    }
-    return results;
-  }catch(e){return[];}
-}
-async function saveToCache(emails){
-  const rows=emails.map(e=>({gmail_id:e.id,thread_id:e.threadId,subject:e.subject,from_addr:e.from,from_name:e.fromName,from_email:e.fromEmail,email_date:e.date,snippet:e.snippet,unread:e.unread,priority:e.priority,category:e.category,ai_summary:e.summary,context_signals:e.context||[]}));
-  const chunk=100;
-  for(let i=0;i<rows.length;i+=chunk){
-    try{await sbReq('/rest/v1/gmail_emails',{method:'POST',body:JSON.stringify(rows.slice(i,i+chunk)),headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});}catch(e){}
+// Timeout wrapper — Supabase calls never block more than 8s
+async function sbFetch(path, opts={}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
+  try {
+    const r = await fetch(SB_URL+path, {
+      ...opts,
+      signal: controller.signal,
+      headers: {
+        apikey: SB_KEY,
+        Authorization: 'Bearer '+SB_KEY,
+        'Content-Type': 'application/json',
+        Prefer: 'return=representation',
+        ...(opts.headers||{})
+      }
+    });
+    clearTimeout(timer);
+    return r;
+  } catch(e) {
+    clearTimeout(timer);
+    if (e.name==='AbortError') throw new Error('Supabase timeout');
+    throw e;
   }
 }
-async function saveUserKey(key,value){
-  const uid=S.user?.sub||'default';
-  try{await sbReq('/rest/v1/user_data',{method:'POST',body:JSON.stringify({user_id:uid,data_key:key,data_value:value}),headers:{Prefer:'resolution=merge-duplicates,return=minimal'}});}catch(e){}
+
+// Check if Supabase tables exist before using cache
+let sbAvailable = null; // null=unknown, true=ok, false=unavailable
+async function checkSupabase() {
+  if (sbAvailable !== null) return sbAvailable;
+  try {
+    const r = await sbFetch('/rest/v1/gmail_emails?limit=1', {method:'GET'});
+    sbAvailable = r.ok;
+    if (!r.ok) {
+      const err = await r.json().catch(()=>({}));
+      console.warn('Supabase unavailable:', r.status, err);
+      setStat('Cache unavailable — fetching all from Gmail...');
+    }
+  } catch(e) {
+    sbAvailable = false;
+    console.warn('Supabase error:', e.message);
+  }
+  return sbAvailable;
 }
-async function loadUserData(){
-  const uid=S.user?.sub||'default';
-  try{
-    const r=await sbReq('/rest/v1/user_data?user_id=eq.'+uid+'&select=*',{method:'GET'});
-    if(!r.ok){renderRules();return;}
-    const data=await r.json();
-    (data||[]).forEach(row=>{
-      if(row.data_key==='tasks')S.tasks=row.data_value||[];
-      if(row.data_key==='rules')S.rules=row.data_value||[];
-      if(row.data_key==='saved_emails')S.saved=row.data_value||[];
+
+async function getCached(ids) {
+  if (!ids.length) return [];
+  const ok = await checkSupabase();
+  if (!ok) return []; // graceful fallback — fetch all from Gmail
+
+  const results = [];
+  const chunk = 200; // smaller chunks, safer
+  try {
+    for (let i=0; i<ids.length; i+=chunk) {
+      const slice = ids.slice(i, i+chunk);
+      const r = await sbFetch('/rest/v1/gmail_emails?select=gmail_id,thread_id,subject,from_addr,from_name,from_email,email_date,snippet,unread,priority,category,ai_summary,context_signals&gmail_id=in.('+slice.join(',')+')', {method:'GET'});
+      if (!r.ok) { console.warn('Cache fetch failed:', r.status); continue; }
+      const data = await r.json();
+      results.push(...(data||[]).map(e=>({
+        id:e.gmail_id, threadId:e.thread_id, subject:e.subject,
+        from:e.from_addr, fromName:e.from_name, fromEmail:e.from_email,
+        date:e.email_date, snippet:e.snippet, unread:e.unread,
+        priority:e.priority, category:e.category, summary:e.ai_summary,
+        context:e.context_signals||[], labelIds:[]
+      })));
+    }
+  } catch(e) { console.warn('getCached error:', e.message); }
+  return results;
+}
+
+async function saveToCache(emails) {
+  const ok = await checkSupabase();
+  if (!ok) return; // silent skip if DB unavailable
+  const rows = emails.map(e=>({
+    gmail_id:e.id, thread_id:e.threadId, subject:e.subject,
+    from_addr:e.from, from_name:e.fromName, from_email:e.fromEmail,
+    email_date:e.date, snippet:e.snippet, unread:e.unread,
+    priority:e.priority, category:e.category, ai_summary:e.summary,
+    context_signals:e.context||[]
+  }));
+  const chunk = 50;
+  for (let i=0; i<rows.length; i+=chunk) {
+    try {
+      await sbFetch('/rest/v1/gmail_emails', {
+        method:'POST', body:JSON.stringify(rows.slice(i,i+chunk)),
+        headers:{Prefer:'resolution=merge-duplicates,return=minimal'}
+      });
+    } catch(e) { console.warn('saveToCache error:', e.message); }
+  }
+}
+
+async function saveUserKey(key, value) {
+  const ok = await checkSupabase();
+  if (!ok) return;
+  const uid = S.user?.sub||'default';
+  try {
+    await sbFetch('/rest/v1/user_data', {
+      method:'POST', body:JSON.stringify({user_id:uid, data_key:key, data_value:value}),
+      headers:{Prefer:'resolution=merge-duplicates,return=minimal'}
     });
-    renderTasks();renderRules();updateBadges();
-  }catch(e){renderRules();}
+  } catch(e) { console.warn('saveUserKey error:', e.message); }
+}
+
+async function loadUserData() {
+  const ok = await checkSupabase();
+  if (!ok) { renderRules(); return; }
+  const uid = S.user?.sub||'default';
+  try {
+    const r = await sbFetch('/rest/v1/user_data?user_id=eq.'+uid+'&select=*', {method:'GET'});
+    if (!r.ok) { renderRules(); return; }
+    const data = await r.json();
+    (data||[]).forEach(row=>{
+      if(row.data_key==='tasks') S.tasks=row.data_value||[];
+      if(row.data_key==='rules') S.rules=row.data_value||[];
+      if(row.data_key==='saved_emails') S.saved=row.data_value||[];
+    });
+    renderTasks(); renderRules(); updateBadges();
+  } catch(e) { console.warn('loadUserData error:', e.message); renderRules(); }
 }
 
 // ═══════════════════════════ RENDER ═══════════════════════════
